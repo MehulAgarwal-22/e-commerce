@@ -1,0 +1,160 @@
+{% extends 'shop/base.html' %}
+{% load static %}
+{% block content %}
+
+<!-- Prevent header overlap ONLY for this page -->
+<style>
+.cart-wrapper {
+    margin-top: 160px; /* same fix used in login */
+}
+</style>
+
+<div class="container-fluid py-5 cart-wrapper">
+<div class="container py-5">
+
+{% if items %}
+
+<div class="table-responsive">
+<table class="table align-middle text-center">
+<thead>
+<tr>
+<th>Product</th>
+<th>Name</th>
+<th>Price</th>
+<th>Quantity</th>
+<th>Total</th>
+<th>Remove</th>
+</tr>
+</thead>
+
+<tbody>
+
+{% for item in items %}
+<tr id="row-{{ item.id }}">
+
+<td>
+{% if item.product.image %}
+<img src="{{ item.product.image.url }}"
+     class="rounded-circle"
+     style="width:80px;height:80px;">
+{% else %}
+<img src="{% static 'img/default.jpg' %}"
+     class="rounded-circle"
+     style="width:80px;height:80px;">
+{% endif %}
+</td>
+
+<td>{{ item.product.name }}</td>
+
+<td>₹{{ item.product.price }}</td>
+
+<td>
+<div class="input-group justify-content-center" style="width:120px; margin:auto;">
+
+<button class="btn btn-sm btn-minus"
+onclick="updateQuantity('{{ item.id }}', 'decrease')">-</button>
+
+<input type="text"
+id="qty-{{ item.id }}"
+class="form-control text-center"
+value="{{ item.quantity }}"
+readonly>
+
+<button class="btn btn-sm btn-plus"
+onclick="updateQuantity('{{ item.id }}', 'increase')">+</button>
+
+</div>
+</td>
+
+<td>
+₹<span id="total-{{ item.id }}">
+{{ item.total_price }}
+</span>
+</td>
+
+<td>
+<button class="btn btn-danger btn-sm"
+onclick="removeItem('{{ item.id }}')">
+<i class="fa fa-times"></i>
+</button>
+</td>
+
+</tr>
+{% endfor %}
+
+</tbody>
+</table>
+</div>
+
+<div class="text-end mt-4">
+<h4>
+Cart Total: ₹<span id="cart-total">{{ total }}</span>
+</h4>
+
+<a href="{% url 'checkout' %}"
+class="btn btn-primary mt-3 px-4 py-2">
+Proceed Checkout
+</a>
+</div>
+
+{% else %}
+
+<div class="text-center">
+<h4>Your Cart is Empty</h4>
+<a href="{% url 'shop' %}" class="btn btn-primary mt-3">
+Continue Shopping
+</a>
+</div>
+
+{% endif %}
+
+</div>
+</div>
+
+
+<script>
+
+function updateQuantity(itemId, action) {
+fetch("{% url 'update_cart' %}", {
+method: "POST",
+headers: {
+"X-CSRFToken": "{{ csrf_token }}",
+"Content-Type": "application/x-www-form-urlencoded"
+},
+body: `item_id=${itemId}&action=${action}`
+})
+.then(response => response.json())
+.then(data => {
+
+document.getElementById("qty-"+itemId).value = data.quantity;
+document.getElementById("total-"+itemId).innerText = data.item_total;
+document.getElementById("cart-total").innerText = data.cart_total;
+
+});
+}
+
+function removeItem(itemId) {
+fetch("{% url 'remove_from_cart' %}", {
+method: "POST",
+headers: {
+"X-CSRFToken": "{{ csrf_token }}",
+"Content-Type": "application/x-www-form-urlencoded"
+},
+body: `item_id=${itemId}`
+})
+.then(response => response.json())
+.then(data => {
+
+document.getElementById("row-"+itemId).remove();
+document.getElementById("cart-total").innerText = data.cart_total;
+
+if (data.cart_total == 0) {
+location.reload();
+}
+
+});
+}
+
+</script>
+
+{% endblock %}

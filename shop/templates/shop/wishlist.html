@@ -1,0 +1,77 @@
+{% extends 'shop/base.html' %}
+{% load static %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="container-fluid page-header py-5">
+    <h1 class="text-center text-white display-6">Wishlist</h1>
+    <ol class="breadcrumb justify-content-center mb-0">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'shop' %}">Shop</a></li>
+        <li class="breadcrumb-item active text-white">Wishlist</li>
+    </ol>
+</div>
+
+<!-- Wishlist Items -->
+<div class="container py-5">
+    <h1 class="mb-4 text-center">My Wishlist</h1>
+
+    {% if wishlist_items %}
+    <div class="row g-4">
+        {% for item in wishlist_items %}
+        <div class="col-md-6 col-lg-4">
+            <div class="rounded position-relative fruite-item shadow-sm">
+                <div class="fruite-img">
+                    <img src="{{ item.product.image.url }}" class="img-fluid w-100 rounded-top" alt="{{ item.product.name }}">
+                </div>
+                <div class="text-white bg-secondary px-3 py-1 rounded position-absolute" style="top: 10px; left: 10px;">Wishlist</div>
+                <div class="p-4 border border-secondary border-top-0 rounded-bottom">
+                    <h4>{{ item.product.name }}</h4>
+                    <p>{{ item.product.description|truncatewords:15 }}</p>
+                    <div class="d-flex justify-content-between flex-lg-wrap">
+                        <p class="text-dark fs-5 fw-bold mb-0">₹{{ item.product.price }}</p>
+                        <div class="d-flex gap-2">
+                            <form method="POST" action="{% url 'add_to_cart' item.product.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn border border-secondary rounded-pill px-3 text-primary">
+                                    <i class="fa fa-shopping-bag me-2 text-primary"></i> Add to cart
+                                </button>
+                            </form>
+                            <form method="POST" action="{% url 'remove_from_wishlist' item.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-danger rounded-pill px-3">
+                                    <i class="fa fa-trash me-2"></i> Remove
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="pagination d-flex justify-content-center">
+                <a href="#" class="rounded">&laquo;</a>
+                <a href="#" class="active rounded">1</a>
+                <a href="#" class="rounded">2</a>
+                <a href="#" class="rounded">3</a>
+                <a href="#" class="rounded">&raquo;</a>
+            </div>
+        </div>
+    </div>
+
+    {% else %}
+    <!-- Empty Wishlist -->
+    <div class="text-center py-5">
+        <img src="{% static 'shop/images/empty-wishlist.png' %}" alt="Empty Wishlist" class="img-fluid mb-3" style="max-width:200px;">
+        <h4>Your wishlist is empty!</h4>
+        <p>Browse our <a href="{% url 'shop' %}">shop</a> and add your favorite products to wishlist.</p>
+        <a href="{% url 'shop' %}" class="btn btn-primary mt-2">Go Shopping</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends 'shop/base.html' %}
+{% block content %}
+
+<div style="margin-top: 140px;">
+    <div class="container py-5">
+        <h2>My Orders</h2>
+
+        {% for order in orders %}
+        <div class="card mb-3 p-3">
+            <h5>Order #{{ order.id }}</h5>
+            <p>Total: ₹{{ order.total_amount }}</p>
+            <p>Status: <strong>{{ order.status }}</strong></p>
+            <p>Date: {{ order.created_at }}</p>
+
+            <a href="{% url 'generate_invoice' order.id %}" 
+            class="btn btn-sm btn-primary">
+            Download Invoice
+            </a>
+        </div>
+        {% empty %}
+        <p>No orders yet.</p>
+        {% endfor %}
+    </div>
+</div>
+
+
+{% endblock %}

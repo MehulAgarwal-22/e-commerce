@@ -1,0 +1,53 @@
+{% extends 'shop/base.html' %}
+{% block content %}
+
+<div style="margin-top: 160px;">
+    <div class="container account-wrapper">
+        <h2 class="mb-4">Account Details</h2>
+
+        <form method="POST">
+        {% csrf_token %}
+
+        <div class="mb-3">
+        <label>Username</label>
+        <input type="text" class="form-control"
+        value="{{ request.user.username }}" readonly>
+        </div>
+
+        <div class="mb-3">
+        <label>First Name</label>
+        <input type="text" name="first_name"
+        class="form-control"
+        value="{{ request.user.first_name }}">
+        </div>
+
+        <div class="mb-3">
+        <label>Last Name</label>
+        <input type="text" name="last_name"
+        class="form-control"
+        value="{{ request.user.last_name }}">
+        </div>
+
+        <div class="mb-3">
+        <label>Email</label>
+        <input type="email" name="email"
+        class="form-control"
+        value="{{ request.user.email }}">
+        </div>
+
+        <button type="submit" class="btn btn-primary">
+        Update Details
+        </button>
+
+        </form>
+
+        <hr class="my-4">
+
+        <a href="{% url 'order_history' %}" class="btn btn-outline-primary">
+        View Order History
+        </a>
+
+        </div>
+</div>
+
+{% endblock %}

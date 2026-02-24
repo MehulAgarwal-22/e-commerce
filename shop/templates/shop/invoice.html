@@ -1,0 +1,61 @@
+{% extends 'shop/base.html' %}
+{% block content %}
+
+<div class="container py-5">
+    <div class="card p-5 shadow">
+
+        <h2>Invoice</h2>
+        <hr>
+
+        <p><strong>Order ID:</strong> {{ order.id }}</p>
+        <p><strong>Date:</strong> {{ order.created_at }}</p>
+        <p><strong>Status:</strong> {{ order.status }}</p>
+
+        <hr>
+
+        <h4>Billing Details</h4>
+        <p>{{ order.first_name }} {{ order.last_name }}</p>
+        <p>{{ order.address }}, {{ order.city }}</p>
+        <p>{{ order.country }} - {{ order.zipcode }}</p>
+        <p>Mobile: {{ order.mobile }}</p>
+        <p>Email: {{ order.email }}</p>
+
+        <hr>
+
+        <h4>Order Items</h4>
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Price</th>
+                    <th>Qty</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in order.items.all %}
+                <tr>
+                    <td>{{ item.product.name }}</td>
+                    <td>₹{{ item.price }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>₹{{ item.total }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <hr>
+
+        <h4 class="text-end">Grand Total: ₹{{ order.total_amount }}</h4>
+
+        <div class="text-center mt-4">
+            <a href="{% url 'home' %}" class="btn btn-primary">
+                Continue Shopping
+            </a>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}
