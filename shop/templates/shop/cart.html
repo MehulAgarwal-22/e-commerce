@@ -1,160 +1,226 @@
 {% extends 'shop/base.html' %}
 {% load static %}
+
 {% block content %}
 
 <!-- Prevent header overlap ONLY for this page -->
 <style>
 .cart-wrapper {
-    margin-top: 160px; /* same fix used in login */
+    margin-top: 160px;
+}
+.continue-shopping {
+    margin-bottom: 20px;
 }
 </style>
 
 <div class="container-fluid py-5 cart-wrapper">
-<div class="container py-5">
+    <div class="container py-5">
+        
+        <!-- Cart Title -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h1 class="display-6">Shopping Cart</h1>
+                <p class="text-muted">Review and update your cart items before checkout</p>
+            </div>
+        </div>
 
-{% if items %}
+        <!-- Continue Shopping Button - ABOVE the cart -->
+        <div class="row continue-shopping">
+            <div class="col-12">
+                <a href="{% url 'shop' %}" class="btn btn-outline-primary">
+                    <i class="fa fa-arrow-left me-2"></i>Continue Shopping
+                </a>
+            </div>
+        </div>
 
-<div class="table-responsive">
-<table class="table align-middle text-center">
-<thead>
-<tr>
-<th>Product</th>
-<th>Name</th>
-<th>Price</th>
-<th>Quantity</th>
-<th>Total</th>
-<th>Remove</th>
-</tr>
-</thead>
-
-<tbody>
-
-{% for item in items %}
-<tr id="row-{{ item.id }}">
-
-<td>
-{% if item.product.image %}
-<img src="{{ item.product.image.url }}"
-     class="rounded-circle"
-     style="width:80px;height:80px;">
-{% else %}
-<img src="{% static 'img/default.jpg' %}"
-     class="rounded-circle"
-     style="width:80px;height:80px;">
-{% endif %}
-</td>
-
-<td>{{ item.product.name }}</td>
-
-<td>₹{{ item.product.price }}</td>
-
-<td>
-<div class="input-group justify-content-center" style="width:120px; margin:auto;">
-
-<button class="btn btn-sm btn-minus"
-onclick="updateQuantity('{{ item.id }}', 'decrease')">-</button>
-
-<input type="text"
-id="qty-{{ item.id }}"
-class="form-control text-center"
-value="{{ item.quantity }}"
-readonly>
-
-<button class="btn btn-sm btn-plus"
-onclick="updateQuantity('{{ item.id }}', 'increase')">+</button>
-
+        {% if items %}
+        
+        <div class="row">
+            <!-- Cart Items Column -->
+            <div class="col-lg-8">
+                <div class="table-responsive">
+                    <table class="table align-middle text-center">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Product</th>
+                                <th>Name</th>
+                                <th>Price</th>
+                                <th>Quantity</th>
+                                <th>Total</th>
+                                <th>Remove</th>
+                            </tr>
+                        </thead>
+                        
+                        <tbody>
+                            {% for item in items %}
+                            <tr id="row-{{ item.id }}">
+                                <td>
+                                    <a href="{% url 'product_detail' item.product.id %}">
+                                        <img src="{{ item.product.image.url }}"
+                                             class="rounded-circle border"
+                                             style="width:80px;height:80px; object-fit:cover;">
+                                    </a>
+                                </td>
+                                
+                                <td class="fw-bold">
+                                    <a href="{% url 'product_detail' item.product.id %}" class="text-dark text-decoration-none">
+                                        {{ item.product.name }}
+                                    </a>
+                                </td>
+                                
+                                <td class="text-primary fw-bold">₹{{ item.product.price|floatformat:2 }}</td>
+                                
+                                <td>
+                                    <div class="d-flex justify-content-center">
+                                        <div class="input-group" style="width: 130px;">
+                                            <button class="btn btn-sm btn-outline-secondary" 
+                                                    onclick="updateQuantity('{{ item.id }}', 'decrease')"
+                                                    {% if item.quantity <= 1 %}disabled{% endif %}>
+                                                <i class="fa fa-minus"></i>
+                                            </button>
+                                            
+                                            <input type="text"
+                                                   id="qty-{{ item.id }}"
+                                                   class="form-control text-center bg-white"
+                                                   value="{{ item.quantity }}"
+                                                   readonly>
+                                            
+                                            <button class="btn btn-sm btn-outline-secondary" 
+                                                    onclick="updateQuantity('{{ item.id }}', 'increase')"
+                                                    data-max-stock="{{ item.product.stock }}"
+                                                    {% if item.quantity >= item.product.stock %}disabled{% endif %}>
+                                                <i class="fa fa-plus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </td>
+                                
+                                <td class="fw-bold">
+                                    ₹<span id="total-{{ item.id }}">{{ item.total_price|floatformat:2 }}</span>
+                                </td>
+                                
+                                <td>
+                                    <button class="btn btn-outline-danger btn-sm" 
+                                            onclick="removeItem('{{ item.id }}')">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Cart Summary Column -->
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">Cart Summary</h5>
+                        
+                        <div class="d-flex justify-content-between mb-3">
+                            <span>Subtotal:</span>
+                            <span class="fw-bold">₹<span id="cart-subtotal">{{ subtotal|floatformat:2 }}</span></span>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mb-3">
+                            <span>Items:</span>
+                            <span class="fw-bold" id="item-count">{{ item_count }}</span>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mb-3">
+                            <span>Delivery:</span>
+                            <span class="fw-bold" id="delivery-charge">
+                                {% if delivery_charge == 0 %}
+                                    <span class="text-success">Free</span>
+                                {% else %}
+                                    ₹{{ delivery_charge|floatformat:2 }}
+                                {% endif %}
+                            </span>
+                        </div>
+                        
+                        {% if subtotal < 500 %}
+                        <div class="alert alert-warning py-2 small">
+                            <i class="fa fa-info-circle me-1"></i>
+                            Add ₹{{ need_for_free|floatformat:2 }} more for free shipping
+                        </div>
+                        {% endif %}
+                        
+                        <hr>
+                        
+                        <div class="d-flex justify-content-between mb-4">
+                            <span class="h5">Total:</span>
+                            <span class="h5 fw-bold text-primary">₹<span id="cart-total">{{ total|floatformat:2 }}</span></span>
+                        </div>
+                        
+                        <a href="{% url 'checkout' %}" class="btn btn-primary w-100 py-3">
+                            <i class="fa fa-lock me-2"></i>Proceed to Checkout
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {% else %}
+        
+        <!-- Empty Cart Section -->
+        <div class="text-center py-5">
+            <div class="mb-4">
+                <i class="fa fa-shopping-cart fa-4x text-muted"></i>
+            </div>
+            <h3 class="mb-3">Your Cart is Empty</h3>
+            <p class="text-muted mb-4">Looks like you haven't added any items to your cart yet.</p>
+            <a href="{% url 'shop' %}" class="btn btn-primary btn-lg px-5">
+                <i class="fa fa-shopping-bag me-2"></i>Start Shopping
+            </a>
+        </div>
+        
+        {% endif %}
+    </div>
 </div>
-</td>
 
-<td>
-₹<span id="total-{{ item.id }}">
-{{ item.total_price }}
-</span>
-</td>
-
-<td>
-<button class="btn btn-danger btn-sm"
-onclick="removeItem('{{ item.id }}')">
-<i class="fa fa-times"></i>
-</button>
-</td>
-
-</tr>
-{% endfor %}
-
-</tbody>
-</table>
+<!-- Related Products Section -->
+<div class="container-fluid bg-light py-5">
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col-12 text-center">
+                <h2 class="display-6">You May Also Like</h2>
+                <p class="text-muted">Discover more fresh products from our store</p>
+            </div>
+        </div>
+        
+        <div class="row g-4">
+            {% for product in recommended_products %}
+            <div class="col-lg-3 col-md-6">
+                <div class="card h-100 shadow-sm">
+                    <a href="{% url 'product_detail' product.id %}" class="text-decoration-none">
+                        <img src="{{ product.image.url }}" class="card-img-top" style="height: 200px; object-fit: cover;" alt="{{ product.name }}">
+                        <div class="card-body text-center">
+                            <h6 class="fw-bold text-dark">{{ product.name }}</h6>
+                            <!-- Description removed -->
+                            <div class="mb-3">
+                                <span class="text-primary fw-bold">₹{{ product.price|floatformat:2 }}/kg</span>
+                            </div>
+                            <button class="btn btn-sm btn-outline-primary w-100 add-to-cart-btn" 
+                                    data-product-id="{{ product.id }}"
+                                    onclick="quickAddToCart(this); event.preventDefault();"
+                                    {% if product.stock <= 0 %}disabled{% endif %}>
+                                <i class="fa fa-shopping-bag me-2"></i>Add to Cart
+                            </button>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center">
+                <p class="text-muted">Check back later for new products!</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
 </div>
 
-<div class="text-end mt-4">
-<h4>
-Cart Total: ₹<span id="cart-total">{{ total }}</span>
-</h4>
-
-<a href="{% url 'checkout' %}"
-class="btn btn-primary mt-3 px-4 py-2">
-Proceed Checkout
-</a>
-</div>
-
-{% else %}
-
-<div class="text-center">
-<h4>Your Cart is Empty</h4>
-<a href="{% url 'shop' %}" class="btn btn-primary mt-3">
-Continue Shopping
-</a>
-</div>
-
-{% endif %}
-
-</div>
-</div>
-
-
-<script>
-
-function updateQuantity(itemId, action) {
-fetch("{% url 'update_cart' %}", {
-method: "POST",
-headers: {
-"X-CSRFToken": "{{ csrf_token }}",
-"Content-Type": "application/x-www-form-urlencoded"
-},
-body: `item_id=${itemId}&action=${action}`
-})
-.then(response => response.json())
-.then(data => {
-
-document.getElementById("qty-"+itemId).value = data.quantity;
-document.getElementById("total-"+itemId).innerText = data.item_total;
-document.getElementById("cart-total").innerText = data.cart_total;
-
-});
-}
-
-function removeItem(itemId) {
-fetch("{% url 'remove_from_cart' %}", {
-method: "POST",
-headers: {
-"X-CSRFToken": "{{ csrf_token }}",
-"Content-Type": "application/x-www-form-urlencoded"
-},
-body: `item_id=${itemId}`
-})
-.then(response => response.json())
-.then(data => {
-
-document.getElementById("row-"+itemId).remove();
-document.getElementById("cart-total").innerText = data.cart_total;
-
-if (data.cart_total == 0) {
-location.reload();
-}
-
-});
-}
-
-</script>
+<!-- Hidden CSRF for JavaScript -->
+<input type="hidden" id="csrf-token" value="{{ csrf_token }}">
 
 {% endblock %}

@@ -9,9 +9,13 @@ from django.dispatch import receiver
 # =========================
 class Category(models.Model):
     name = models.CharField(max_length=200)
+    gst_percent = models.DecimalField(max_digits=5, decimal_places=2, default=5)
 
     def __str__(self):
         return self.name
+    
+    def product_count(self):
+        return self.product_set.count()
 
 
 # =========================
@@ -37,6 +41,7 @@ class Product(models.Model):
 # =========================
 class Cart(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
+    gst_percent = models.DecimalField(max_digits=5, decimal_places=2, default=5)
 
     def __str__(self):
         return f"{self.user.username} Cart"
@@ -79,6 +84,7 @@ class Order(models.Model):
     mobile = models.CharField(max_length=20)
     email = models.EmailField()
     order_note = models.TextField(blank=True, null=True)
+
     payment_method = models.CharField(max_length=100)
 
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
@@ -86,6 +92,24 @@ class Order(models.Model):
     status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='Pending')
 
     created_at = models.DateTimeField(auto_now_add=True)
+
+    delivered_at = models.DateTimeField(null=True, blank=True)
+
+    subtotal = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    coupon_code = models.CharField(max_length=50, null=True, blank=True)
+    discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    gst_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    delivery_charge = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+
+    gst_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    discount_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+
+
+    return_requested = models.BooleanField(default=False)
+    replace_requested = models.BooleanField(default=False)
+
+    return_approved = models.BooleanField(default=False)
+    replace_approved = models.BooleanField(default=False)
 
     def __str__(self):
         return f"Order {self.id} - {self.user.username}"
@@ -105,6 +129,12 @@ class Wishlist(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     added_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'product')  # Prevent duplicate wishlist items
+
+    def __str__(self):
+        return f"{self.user.username} - {self.product.name}"
 
 class Coupon(models.Model):
     code = models.CharField(max_length=50, unique=True)

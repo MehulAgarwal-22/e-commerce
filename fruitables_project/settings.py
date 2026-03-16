@@ -25,7 +25,10 @@ SECRET_KEY = 'django-insecure-$+s!g-eruq6k7!xwm0omv@nkcgbzd)b(w8mhd(q(d-#10u3l5=
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*','https://oleta-nondiabolic-zachariah.ngrok-free.dev']
+CSRF_TRUSTED_ORIGINS = [
+    "https://oleta-nondiabolic-zachariah.ngrok-free.dev",
+]
 
 
 # Application definition
@@ -105,7 +108,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Kolkata'
 
 USE_I18N = True
 

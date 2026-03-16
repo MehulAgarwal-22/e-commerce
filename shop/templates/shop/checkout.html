@@ -14,173 +14,198 @@
 </div>
 
 <div class="container-fluid py-5">
-<div class="container py-5">
-
-<form method="POST">
-{% csrf_token %}
-
-<div class="row g-5">
-
-<!-- ================= LEFT SIDE BILLING ================= -->
-<div class="col-lg-7">
-
-<h4 class="mb-4">Billing Details</h4>
-
-<div class="row">
-    <div class="col-md-6">
-        <label class="form-label">First Name *</label>
-        <input type="text" name="first_name" class="form-control" required>
+    <div class="container py-5">
+        <form method="POST">
+            {% csrf_token %}
+            
+            <div class="row g-5">
+                <!-- ================= LEFT SIDE BILLING ================= -->
+                <div class="col-lg-7">
+                    <h4 class="mb-4">Billing Details</h4>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">First Name *</label>
+                            <input type="text" name="first_name" class="form-control" value="{{ request.user.first_name }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Last Name *</label>
+                            <input type="text" name="last_name" class="form-control" value="{{ request.user.last_name }}" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <label class="form-label">Company Name</label>
+                        <input type="text" name="company" class="form-control" value="{{ request.user.profile.company|default:'' }}">
+                    </div>
+                    
+                    <div class="mt-3">
+                        <label class="form-label">Address *</label>
+                        <input type="text" name="address" class="form-control" required>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <label class="form-label">City *</label>
+                            <input type="text" name="city" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Country *</label>
+                            <input type="text" name="country" class="form-control" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Zipcode *</label>
+                            <input type="text" name="zipcode" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Mobile *</label>
+                            <input type="tel" name="mobile" class="form-control" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <label class="form-label">Email *</label>
+                        <input type="email" name="email" class="form-control" value="{{ request.user.email }}" required>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <label class="form-label">Order Notes</label>
+                        <textarea name="order_note" class="form-control" rows="4" placeholder="Special instructions for delivery..."></textarea>
+                    </div>
+                </div>
+                
+                <!-- ================= RIGHT SIDE ORDER SUMMARY ================= -->
+                <div class="col-lg-5">
+                    <div class="bg-light p-4 rounded">
+                        <h4 class="mb-4">Your Order</h4>
+                        
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead class="bg-white">
+                                    <tr>
+                                        <th>Product</th>
+                                        <th class="text-center">Qty</th>
+                                        <th class="text-end">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in items %}
+                                    <tr>
+                                        <td>
+                                            {{ item.product.name }}<br>
+                                            <small class="text-muted">₹{{ item.product.price|floatformat:2 }} per kg</small>
+                                        </td>
+                                        <td class="text-center">{{ item.quantity }}</td>
+                                        <td class="text-end fw-bold">₹{{ item.total_price|floatformat:2 }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="3" class="text-center py-4">
+                                            <p class="text-muted mb-0">Your cart is empty</p>
+                                            <a href="{% url 'shop' %}" class="btn btn-sm btn-primary mt-2">Continue Shopping</a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Summary Totals -->
+                        <div class="mt-4">
+                            <!-- Subtotal -->
+                            <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
+                                <span class="text-muted">Subtotal:</span>
+                                <span class="fw-bold">₹{{ subtotal|floatformat:2 }}</span>
+                            </div>
+                            
+                            <!-- GST -->
+                            <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
+                                <span class="text-muted">GST (5%):</span>
+                                <span class="fw-bold">₹{{ gst|floatformat:2 }}</span>
+                            </div>
+                            
+                            <!-- Delivery Charge -->
+                            <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
+                                <span class="text-muted">Delivery Charge:</span>
+                                <span class="fw-bold">₹{{ delivery|floatformat:2 }}</span>
+                            </div>
+                            
+                            <!-- Discount (hidden by default) -->
+                            <div class="d-flex justify-content-between mb-2 pb-2 border-bottom" id="discount-row" {% if discount > 0 %}style="display: flex;"{% else %}style="display: none;"{% endif %}>
+                                <span class="text-muted">Discount:</span>
+                                <span class="fw-bold text-success" id="discount-amount">-₹{{ discount|floatformat:2 }}</span>
+                            </div>
+                            
+                            <!-- Total -->
+                            <div class="d-flex justify-content-between mb-3 pt-2">
+                                <span class="h5">Total Payable:</span>
+                                <span class="h5 fw-bold text-primary" id="final-total">₹{{ grand_total|floatformat:2 }}</span>
+                            </div>
+                        </div>
+                        
+                        <!-- ================= COUPON UI ================= -->
+                        <div class="mb-4 p-3 bg-white rounded">
+                            <label class="form-label fw-bold">Have a coupon?</label>
+                            <div class="input-group">
+                                <input type="text" id="coupon-code" name="coupon" class="form-control" placeholder="Enter coupon code">
+                                <button class="btn btn-outline-primary" type="button" onclick="applyCoupon()">
+                                    Apply
+                                </button>
+                            </div>
+                            <div id="coupon-message" class="small mt-2"></div>
+                        </div>
+                        
+                        <!-- ================= WALLET BALANCE ================= -->
+                        {% if wallet %}
+                        <div class="alert alert-info mb-4">
+                            <i class="fa fa-wallet me-2"></i>
+                            <strong>Wallet Balance:</strong> ₹{{ wallet.balance|floatformat:2 }}
+                        </div>
+                        {% endif %}
+                        
+                        <!-- ================= PAYMENT METHODS ================= -->
+                        <div class="border p-4 rounded bg-white">
+                            <h5 class="mb-3">Payment Method</h5>
+                            
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="payment_method" id="cod" value="COD" checked required>
+                                <label class="form-check-label" for="cod">
+                                    Cash On Delivery
+                                </label>
+                            </div>
+                            
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="payment_method" id="bank" value="Bank Transfer">
+                                <label class="form-check-label" for="bank">
+                                    Direct Bank Transfer
+                                </label>
+                            </div>
+                            
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="payment_method" id="paypal" value="Paypal">
+                                <label class="form-check-label" for="paypal">
+                                    Paypal
+                                </label>
+                            </div>
+                            
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="radio" name="payment_method" id="wallet" value="Wallet">
+                                <label class="form-check-label" for="wallet">
+                                    Pay Using Wallet
+                                </label>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary py-3 px-4 text-uppercase w-100">
+                                <i class="fa fa-check-circle me-2"></i>Place Order
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
     </div>
-    <div class="col-md-6">
-        <label class="form-label">Last Name *</label>
-        <input type="text" name="last_name" class="form-control" required>
-    </div>
 </div>
-
-<div class="mt-3">
-    <label class="form-label">Company Name</label>
-    <input type="text" name="company" class="form-control">
-</div>
-
-<div class="mt-3">
-    <label class="form-label">Address *</label>
-    <input type="text" name="address" class="form-control" required>
-</div>
-
-<div class="row mt-3">
-    <div class="col-md-6">
-        <label class="form-label">City *</label>
-        <input type="text" name="city" class="form-control" required>
-    </div>
-    <div class="col-md-6">
-        <label class="form-label">Country *</label>
-        <input type="text" name="country" class="form-control" required>
-    </div>
-</div>
-
-<div class="row mt-3">
-    <div class="col-md-6">
-        <label class="form-label">Zipcode *</label>
-        <input type="text" name="zipcode" class="form-control" required>
-    </div>
-    <div class="col-md-6">
-        <label class="form-label">Mobile *</label>
-        <input type="tel" name="mobile" class="form-control" required>
-    </div>
-</div>
-
-<div class="mt-3">
-    <label class="form-label">Email *</label>
-    <input type="email" name="email" class="form-control" required>
-</div>
-
-<div class="mt-3">
-    <label class="form-label">Order Notes</label>
-    <textarea name="order_note" class="form-control" rows="4"></textarea>
-</div>
-
-</div>
-
-<!-- ================= RIGHT SIDE ORDER SUMMARY ================= -->
-<div class="col-lg-5">
-
-<h4 class="mb-4">Your Order</h4>
-
-<div class="table-responsive">
-<table class="table">
-<thead>
-<tr>
-<th>Product</th>
-<th>Qty</th>
-<th>Total</th>
-</tr>
-</thead>
-<tbody>
-
-{% for item in items %}
-<tr>
-<td>
-{{ item.product.name }} <br>
-<small>₹{{ item.product.price }}</small>
-</td>
-<td>{{ item.quantity }}</td>
-<td>₹{{ item.total }}</td>
-</tr>
-{% empty %}
-<tr>
-<td colspan="3" class="text-center">Your cart is empty</td>
-</tr>
-{% endfor %}
-
-<tr>
-<td colspan="2" class="text-end"><strong>Subtotal</strong></td>
-<td><strong>₹{{ total }}</strong></td>
-</tr>
-
-<tr>
-<td colspan="2" class="text-end"><strong>Total</strong></td>
-<td><strong class="text-primary">₹{{ total }}</strong></td>
-</tr>
-
-</tbody>
-</table>
-</div>
-
-<!-- ================= COUPON UI ================= -->
-<div class="mb-4">
-<label class="form-label">Have a coupon?</label>
-<div class="input-group">
-<input type="text" class="form-control" placeholder="Enter coupon code">
-<button class="btn btn-outline-secondary" type="button">Apply</button>
-</div>
-</div>
-
-<!-- ================= WALLET BALANCE ================= -->
-{% if wallet %}
-<div class="alert alert-info">
-<strong>Wallet Balance:</strong> ₹{{ wallet.balance }}
-</div>
-{% endif %}
-
-<!-- ================= PAYMENT METHODS ================= -->
-<div class="border p-4 rounded">
-
-<h5 class="mb-3">Payment Method</h5>
-
-<div class="form-check mb-2">
-<input class="form-check-input" type="radio" name="payment_method" value="Cash On Delivery" required>
-<label class="form-check-label">Cash On Delivery</label>
-</div>
-
-<div class="form-check mb-2">
-<input class="form-check-input" type="radio" name="payment_method" value="Bank Transfer">
-<label class="form-check-label">Direct Bank Transfer</label>
-</div>
-
-<div class="form-check mb-2">
-<input class="form-check-input" type="radio" name="payment_method" value="Paypal">
-<label class="form-check-label">Paypal</label>
-</div>
-
-<div class="form-check mb-3">
-<input class="form-check-input" type="radio" name="payment_method" value="Wallet">
-<label class="form-check-label">Pay Using Wallet</label>
-</div>
-
-<button type="submit"
-class="btn border-secondary py-3 px-4 text-uppercase w-100 text-primary">
-Place Order
-</button>
-
-</div>
-
-</div>
-
-</div>
-
-</form>
-
-</div>
-</div>
-
 {% endblock %}

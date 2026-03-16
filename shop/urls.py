@@ -28,9 +28,16 @@ urlpatterns = [
 
     path('account/', views.account_details, name='account'),
     path('orders/', views.order_history, name='order_history'),
+    
     path('wishlist/', views.wishlist, name='wishlist'),
+    path('toggle-wishlist/<int:product_id>/', views.toggle_wishlist, name='toggle_wishlist'),
+    path('remove-from-wishlist/<int:wishlist_id>/', views.remove_from_wishlist, name='remove_from_wishlist'),
 
      path('invoice/<int:order_id>/', views.generate_invoice, name='generate_invoice'),
     path('apply-coupon/', views.apply_coupon, name='apply_coupon'),
     path('order-success/', views.order_success, name='order_success'),
+
+    path("cancel-order/<int:order_id>/", views.cancel_order, name="cancel_order"),
+    path("return-order/<int:order_id>/", views.request_return, name="request_return"),
+    path("replace-order/<int:order_id>/", views.request_replace, name="request_replace"),
 ]

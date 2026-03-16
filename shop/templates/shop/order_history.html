@@ -11,6 +11,11 @@
             <p>Total: ₹{{ order.total_amount }}</p>
             <p>Status: <strong>{{ order.status }}</strong></p>
             <p>Date: {{ order.created_at }}</p>
+            {% if order.status == "Pending" or order.status == "Processing" %}
+            <a href="{% url 'cancel_order' order.id %}" class="btn btn-danger btn-sm">
+            Cancel Order
+            </a>
+            {% endif %}
 
             <a href="{% url 'generate_invoice' order.id %}" 
             class="btn btn-sm btn-primary">
