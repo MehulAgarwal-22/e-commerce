@@ -1,32 +1,402 @@
 {% extends 'shop/base.html' %}
+{% load static %}
+
 {% block content %}
 
-<div style="margin-top: 140px;">
-    <div class="container py-5">
-        <h2>My Orders</h2>
+<!-- Link Order History CSS -->
+<link rel="stylesheet" href="{% static 'css/order_history.css' %}">
 
-        {% for order in orders %}
-        <div class="card mb-3 p-3">
-            <h5>Order #{{ order.id }}</h5>
-            <p>Total: ₹{{ order.total_amount }}</p>
-            <p>Status: <strong>{{ order.status }}</strong></p>
-            <p>Date: {{ order.created_at }}</p>
-            {% if order.status == "Pending" or order.status == "Processing" %}
-            <a href="{% url 'cancel_order' order.id %}" class="btn btn-danger btn-sm">
-            Cancel Order
-            </a>
-            {% endif %}
-
-            <a href="{% url 'generate_invoice' order.id %}" 
-            class="btn btn-sm btn-primary">
-            Download Invoice
-            </a>
-        </div>
-        {% empty %}
-        <p>No orders yet.</p>
-        {% endfor %}
+<!-- Page Header -->
+<div class="container-fluid page-header py-5">
+    <div class="container text-center py-5">
+        <h1 class="display-4 text-white mb-4">My Orders</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb justify-content-center mb-0">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}" class="text-white">Home</a></li>
+                <li class="breadcrumb-item active text-white" aria-current="page">Orders</li>
+            </ol>
+        </nav>
     </div>
 </div>
 
+<!-- Orders Section -->
+<div class="container py-5">
+    
+    {% if orders %}
+    
+    <!-- Title and Count -->
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <h2 class="display-6 mb-0">My Orders</h2>
+            <span class="badge bg-primary rounded-pill px-4 py-2 fs-6">
+                {{ orders|length }} Order{{ orders|length|pluralize }}
+            </span>
+        </div>
+    </div>
+
+    <!-- Orders List -->
+    <div class="row">
+        <div class="col-12">
+            {% for order in orders %}
+            <div class="order-card card mb-4">
+                <!-- Card Header - Always Visible -->
+                <div class="card-header d-flex justify-content-between align-items-center" 
+                     data-bs-toggle="collapse" 
+                     data-bs-target="#orderDetails{{ order.id }}" 
+                     style="cursor: pointer;">
+                    <div>
+                        <div class="d-flex align-items-center gap-3 flex-wrap">
+                            <h5 class="mb-0">Order #{{ order.id }}</h5>
+                            <small class="text-muted">
+                                <i class="fa fa-calendar me-1"></i>{{ order.created_at|date:"F d, Y" }}
+                            </small>
+                            <span class="badge 
+                                {% if order.status == 'Delivered' %}bg-success
+                                {% elif order.status == 'Cancelled' %}bg-danger
+                                {% elif order.status == 'Pending' %}bg-warning
+                                {% elif order.status == 'Processing' %}bg-info
+                                {% elif order.status == 'Shipped' %}bg-primary
+                                {% else %}bg-secondary{% endif %}">
+                                <i class="fa 
+                                    {% if order.status == 'Delivered' %}fa-check-circle
+                                    {% elif order.status == 'Cancelled' %}fa-times-circle
+                                    {% elif order.status == 'Pending' %}fa-clock
+                                    {% elif order.status == 'Processing' %}fa-spinner fa-spin
+                                    {% elif order.status == 'Shipped' %}fa-truck
+                                    {% else %}fa-box{% endif %} 
+                                    me-1"></i>
+                                {{ order.status }}
+                            </span>
+                        </div>
+                        <div class="order-summary mt-2">
+                            <small class="text-muted me-3">
+                                <i class="fa fa-box me-1"></i>{{ order.order_items_with_totals|length }} item{{ order.order_items_with_totals|length|pluralize }}
+                            </small>
+                            <small class="text-muted">
+                                <i class="fa fa-rupee-sign me-1"></i>Total: ₹{{ order.total_amount|floatformat:2 }}
+                            </small>
+                        </div>
+                    </div>
+                    <div>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                </div>
+                
+                <!-- Card Body - Collapsible Content -->
+                <div class="collapse" id="orderDetails{{ order.id }}">
+                    <div class="card-body">
+                        <!-- Order Items -->
+                        <div class="table-responsive mb-4">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>Qty</th>
+                                        <th>Price</th>
+                                        <th>Total</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in order.order_items_with_totals %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                {% if item.product.image %}
+                                                <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; margin-right: 15px;">
+                                                {% endif %}
+                                                <div>
+                                                    <strong>{{ item.product.name }}</strong>
+                                                    <br>
+                                                    <small class="text-muted">₹{{ item.price|floatformat:2 }} each</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>{{ item.quantity }}</td>
+                                        <td>₹{{ item.price|floatformat:2 }}</td>
+                                        <td class="fw-bold">₹{{ item.total|floatformat:2 }}</td>
+                                        <td>
+                                            {% if order.status == 'Delivered' %}
+                                                {% if not item.return_requested and not item.replace_requested %}
+                                                <div class="d-flex gap-2">
+                                                    <button class="btn btn-sm btn-outline-warning" 
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#returnModal{{ order.id }}{{ item.product.id }}">
+                                                        <i class="fas fa-undo-alt me-1"></i>Return
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-info" 
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#replaceModal{{ order.id }}{{ item.product.id }}">
+                                                        <i class="fas fa-exchange-alt me-1"></i>Replace
+                                                    </button>
+                                                </div>
+                                                {% elif item.return_requested %}
+                                                    <span class="badge bg-warning text-dark">Return Requested</span>
+                                                {% elif item.replace_requested %}
+                                                    <span class="badge bg-info">Replace Requested</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="text-muted">Not eligible</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Order Details Row -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="info-box">
+                                    <h6><i class="fa fa-map-marker-alt"></i>Delivery Address</h6>
+                                    <p>{{ order.address }}</p>
+                                    <p>{{ order.city }}, {{ order.country }} - {{ order.zipcode }}</p>
+                                    <p class="mb-0"><i class="fa fa-phone me-2"></i>{{ order.mobile }}</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-box">
+                                    <h6><i class="fa fa-credit-card"></i>Payment Details</h6>
+                                    <p><strong>Method:</strong> {{ order.payment_method }}</p>
+                                    <p><strong>Subtotal:</strong> ₹{{ order.subtotal|floatformat:2 }}</p>
+                                    {% if order.discount_amount > 0 %}
+                                    <p><strong>Discount:</strong> -₹{{ order.discount_amount|floatformat:2 }}</p>
+                                    {% endif %}
+                                    <p class="h6 mt-2"><strong>Total:</strong> ₹{{ order.total_amount|floatformat:2 }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div class="d-flex gap-2">
+                            <a href="{% url 'generate_invoice' order.id %}" class="btn btn-outline-primary">
+                                <i class="fa fa-file-pdf"></i>Download Invoice
+                            </a>
+                            
+                            {% if order.status == "Pending" or order.status == "Processing" %}
+                            <a href="{% url 'cancel_order' order.id %}" 
+                               class="btn btn-outline-danger"
+                               onclick="return confirm('Are you sure you want to cancel this order?')">
+                                <i class="fa fa-times-circle"></i>Cancel Order
+                            </a>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Review Section -->
+                        {% if order.status == 'Delivered' %}
+                        <div class="mt-4 pt-3 border-top">
+                            <h6 class="mb-3"><i class="fas fa-star me-2"></i>Share Your Experience</h6>
+                            <div class="d-flex gap-2 flex-wrap">
+                                {% for item in order.order_items_with_totals %}
+                                    {% if not item.reviewed %}
+                                    <button class="btn btn-sm btn-outline-success" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#reviewModal{{ order.id }}{{ item.product.id }}">
+                                        <i class="fas fa-star me-1"></i>Review {{ item.product.name }}
+                                    </button>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Return Modal for each item -->
+            {% for item in order.order_items_with_totals %}
+            <div class="modal fade" id="returnModal{{ order.id }}{{ item.product.id }}" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Return Item</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <form method="POST" action="{% url 'request_return' order.id %}">
+                            {% csrf_token %}
+                            <div class="modal-body">
+                                <div class="text-center mb-3">
+                                    {% if item.product.image %}
+                                    <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">
+                                    {% endif %}
+                                    <h6 class="mt-2">{{ item.product.name }}</h6>
+                                    <p class="text-muted">Quantity: {{ item.quantity }}</p>
+                                </div>
+                                
+                                <input type="hidden" name="product_id" value="{{ item.product.id }}">
+                                <input type="hidden" name="quantity" value="{{ item.quantity }}">
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Reason for Return <span class="text-danger">*</span></label>
+                                    <select name="reason" class="form-control" required>
+                                        <option value="">Select a reason</option>
+                                        <option value="Damaged">Product is damaged</option>
+                                        <option value="Wrong Item">Wrong item received</option>
+                                        <option value="Not as described">Not as described</option>
+                                        <option value="Quality issue">Quality issue</option>
+                                        <option value="Expired">Expired product</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Additional Details</label>
+                                    <textarea name="description" class="form-control" rows="3" placeholder="Please provide more details..."></textarea>
+                                </div>
+                                
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <small>Refund will be processed within 5-7 business days after approval.</small>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-warning">Submit Return Request</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Replace Modal for each item -->
+            <div class="modal fade" id="replaceModal{{ order.id }}{{ item.product.id }}" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Replace Item</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <form method="POST" action="{% url 'request_replace' order.id %}">
+                            {% csrf_token %}
+                            <div class="modal-body">
+                                <div class="text-center mb-3">
+                                    {% if item.product.image %}
+                                    <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">
+                                    {% endif %}
+                                    <h6 class="mt-2">{{ item.product.name }}</h6>
+                                    <p class="text-muted">Quantity: {{ item.quantity }}</p>
+                                </div>
+                                
+                                <input type="hidden" name="product_id" value="{{ item.product.id }}">
+                                <input type="hidden" name="quantity" value="{{ item.quantity }}">
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Reason for Replacement <span class="text-danger">*</span></label>
+                                    <select name="reason" class="form-control" required>
+                                        <option value="">Select a reason</option>
+                                        <option value="Damaged">Product is damaged</option>
+                                        <option value="Wrong Item">Wrong item received</option>
+                                        <option value="Defective">Defective product</option>
+                                        <option value="Not working">Not working as expected</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Additional Details</label>
+                                    <textarea name="description" class="form-control" rows="3" placeholder="Please provide more details..."></textarea>
+                                </div>
+                                
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <small>Replacement will be shipped within 3-5 business days after approval.</small>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-info">Submit Replacement Request</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Review Modal for each item -->
+            {% if not item.reviewed %}
+            <div class="modal fade" id="reviewModal{{ order.id }}{{ item.product.id }}" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Review {{ item.product.name }}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <form method="POST" action="{% url 'submit_review' item.product.id %}">
+                            {% csrf_token %}
+                            <div class="modal-body">
+                                <input type="hidden" name="order_id" value="{{ order.id }}">
+                                
+                                <div class="text-center mb-3">
+                                    {% if item.product.image %}
+                                    <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">
+                                    {% endif %}
+                                    <h6 class="mt-2">{{ item.product.name }}</h6>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Your Rating <span class="text-danger">*</span></label>
+                                    <div class="rating-input">
+                                        <div class="d-flex gap-2 justify-content-center">
+                                            <input type="radio" name="rating" value="5" id="star5{{ order.id }}{{ item.product.id }}" required>
+                                            <label for="star5{{ order.id }}{{ item.product.id }}"><i class="far fa-star"></i></label>
+                                            <input type="radio" name="rating" value="4" id="star4{{ order.id }}{{ item.product.id }}">
+                                            <label for="star4{{ order.id }}{{ item.product.id }}"><i class="far fa-star"></i></label>
+                                            <input type="radio" name="rating" value="3" id="star3{{ order.id }}{{ item.product.id }}">
+                                            <label for="star3{{ order.id }}{{ item.product.id }}"><i class="far fa-star"></i></label>
+                                            <input type="radio" name="rating" value="2" id="star2{{ order.id }}{{ item.product.id }}">
+                                            <label for="star2{{ order.id }}{{ item.product.id }}"><i class="far fa-star"></i></label>
+                                            <input type="radio" name="rating" value="1" id="star1{{ order.id }}{{ item.product.id }}">
+                                            <label for="star1{{ order.id }}{{ item.product.id }}"><i class="far fa-star"></i></label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Your Review <span class="text-danger">*</span></label>
+                                    <textarea name="review" class="form-control" rows="4" placeholder="Share your experience with this product..." required></textarea>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-primary">Submit Review</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Continue Shopping Button -->
+    <div class="row mt-5">
+        <div class="col-12 text-center">
+            <a href="{% url 'shop' %}" class="btn btn-outline-primary btn-lg px-5">
+                <i class="fa fa-arrow-left me-2"></i>Continue Shopping
+            </a>
+        </div>
+    </div>
+
+    {% else %}
+    
+    <!-- Empty State -->
+    <div class="text-center py-5">
+        <div class="mb-4">
+            <i class="fa fa-box-open fa-5x text-muted"></i>
+        </div>
+        <h3 class="mb-3">Your order history is empty</h3>
+        <p class="text-muted mb-4">Browse our shop and place your first order today!</p>
+        <a href="{% url 'shop' %}" class="btn btn-primary btn-lg px-5">
+            <i class="fa fa-shopping-bag me-2"></i>Start Shopping
+        </a>
+    </div>
+    
+    {% endif %}
+</div>
+
+<!-- Order History JavaScript -->
+<script src="{% static 'js/order_history.js' %}"></script>
 
 {% endblock %}

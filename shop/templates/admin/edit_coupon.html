@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Coupon - Fruitables Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fb; }
+        
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 260px;
+            height: 100%;
+            background: #1e293b;
+            color: white;
+            transition: 0.3s;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        .sidebar-header { padding: 25px 20px; border-bottom: 1px solid #334155; text-align: center; }
+        .logo { font-size: 24px; font-weight: bold; color: #82c440; }
+        .logo span { color: white; }
+        .sidebar-menu { padding: 20px 0; }
+        .menu-item {
+            display: block;
+            padding: 12px 20px;
+            color: #cbd5e1;
+            text-decoration: none;
+            transition: 0.2s;
+        }
+        .menu-item:hover, .menu-item.active { background: #82c440; color: white; }
+        .menu-item i { width: 25px; margin-right: 10px; }
+        
+        .main-content { margin-left: 260px; padding: 20px; min-height: 100vh; }
+        .top-bar {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .page-title { font-size: 20px; font-weight: 600; margin: 0; }
+        .user-avatar {
+            width: 40px; height: 40px;
+            background: #82c440;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        .logout-btn { background: #ef4444; color: white; padding: 8px 15px; border-radius: 8px; text-decoration: none; }
+        
+        .form-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 500; color: #1e293b; }
+        .form-control {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .form-control:focus { outline: none; border-color: #82c440; }
+        .btn-primary { background: #82c440; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; }
+        .btn-primary:hover { background: #6aa534; }
+        .btn-secondary { background: #64748b; color: white; border: none; padding: 12px 24px; border-radius: 8px; text-decoration: none; display: inline-block; }
+        .checkbox-group { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+        .info-text { font-size: 12px; color: #6c757d; margin-top: 5px; }
+        
+        @media (max-width: 992px) {
+            .sidebar { left: -260px; }
+            .sidebar.show { left: 0; }
+            .main-content { margin-left: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">Fruit<span>ables</span></div>
+            <div style="font-size: 12px;">Admin Panel</div>
+        </div>
+        <div class="sidebar-menu">
+            <a href="{% url 'admin_dashboard' %}" class="menu-item"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="{% url 'admin_products' %}" class="menu-item"><i class="fas fa-box"></i> Products</a>
+            <a href="{% url 'admin_categories' %}" class="menu-item"><i class="fas fa-tags"></i> Categories</a>
+            <a href="{% url 'admin_orders' %}" class="menu-item"><i class="fas fa-shopping-cart"></i> Orders</a>
+            <a href="{% url 'admin_customers' %}" class="menu-item"><i class="fas fa-users"></i> Customers</a>
+            <a href="{% url 'admin_coupons' %}" class="menu-item active"><i class="fas fa-ticket-alt"></i> Coupons</a>
+            <a href="{% url 'admin_payments' %}" class="menu-item"><i class="fas fa-credit-card"></i> Payments</a>
+            <hr><a href="/" class="menu-item"><i class="fas fa-store"></i> View Store</a>
+            <a href="{% url 'admin_logout' %}" class="menu-item"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        </div>
+    </div>
+    
+    <div class="main-content">
+        <div class="top-bar">
+            <button class="btn btn-light d-md-none" onclick="toggleSidebar()" style="border: none;"><i class="fas fa-bars"></i></button>
+            <h1 class="page-title">Edit Coupon</h1>
+            <div class="d-flex align-items-center gap-3">
+                <div class="user-avatar">{{ request.user.username|first|upper }}</div>
+                <span>{{ request.user.username }}</span>
+                <a href="{% url 'admin_logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            </div>
+        </div>
+        
+        <div class="form-card">
+            <form method="POST">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label>Coupon Code</label>
+                    <input type="text" name="code" class="form-control" value="{{ coupon.code }}" required>
+                    <div class="info-text">Customers will enter this code at checkout</div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Discount Percentage (%)</label>
+                    <input type="number" name="discount_percent" class="form-control" min="1" max="100" value="{{ coupon.discount_percent }}" required>
+                    <div class="info-text">Example: 10 = 10% off</div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Minimum Order Amount (₹)</label>
+                    <input type="number" name="min_order_amount" class="form-control" step="0.01" min="0" value="{{ coupon.min_order_amount }}">
+                    <div class="info-text">Minimum cart value required to apply this coupon</div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Maximum Discount Amount (₹)</label>
+                    <input type="number" name="max_discount_amount" class="form-control" step="0.01" min="0" value="{{ coupon.max_discount_amount|default:'' }}" placeholder="Optional">
+                    <div class="info-text">Maximum discount amount this coupon can give</div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Valid From</label>
+                            <input type="datetime-local" name="valid_from" class="form-control" value="{{ coupon.valid_from|date:'Y-m-d\TH:i' }}" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Valid To</label>
+                            <input type="datetime-local" name="valid_to" class="form-control" value="{{ coupon.valid_to|date:'Y-m-d\TH:i' }}" required>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Usage Limit</label>
+                    <input type="number" name="usage_limit" class="form-control" min="1" value="{{ coupon.usage_limit }}" required>
+                    <div class="info-text">How many times this coupon can be used (total across all customers)</div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Current Usage Count</label>
+                    <input type="text" class="form-control" value="{{ coupon.used_count }}" disabled>
+                    <div class="info-text">Times this coupon has already been used</div>
+                </div>
+                
+                <div class="checkbox-group">
+                    <input type="checkbox" name="active" id="isActive" {% if coupon.active %}checked{% endif %}>
+                    <label for="isActive" style="margin: 0;">Active (available for customers)</label>
+                </div>
+                
+                <div class="d-flex gap-2 mt-4">
+                    <button type="submit" class="btn-primary">Update Coupon</button>
+                    <a href="{% url 'admin_coupons' %}" class="btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('show'); }
+    </script>
+</body>
+</html>

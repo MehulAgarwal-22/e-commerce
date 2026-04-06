@@ -1,0 +1,82 @@
+{% extends 'admin/admin_base.html' %}
+
+{% block page_title %}Replacement Requests{% endblock %}
+
+{% block content %}
+<div class="card-custom">
+    <div class="card-header-custom">
+        <h3><i class="fas fa-exchange-alt me-2" style="color: #82c440;"></i>Replacement Requests</h3>
+    </div>
+    
+    <!-- Status Filter Bar -->
+    <div class="p-3 border-bottom" style="background: #f8fafc;">
+        <div class="d-flex gap-2 flex-wrap align-items-center">
+            <a href="{% url 'admin_replacements' %}" class="btn-outline {% if not current_status %}active{% endif %}">All</a>
+            <a href="?status=pending" class="btn-outline {% if current_status == 'pending' %}active{% endif %}">Pending ({{ status_counts.pending }})</a>
+            <a href="?status=approved" class="btn-outline {% if current_status == 'approved' %}active{% endif %}">Approved ({{ status_counts.approved }})</a>
+            <a href="?status=rejected" class="btn-outline {% if current_status == 'rejected' %}active{% endif %}">Rejected ({{ status_counts.rejected }})</a>
+            <a href="?status=completed" class="btn-outline {% if current_status == 'completed' %}active{% endif %}">Completed ({{ status_counts.completed }})</a>
+            
+            <form method="GET" class="ms-auto d-flex gap-2">
+                <input type="text" name="search" class="form-control" style="width: 250px;" placeholder="Search by order #, product..." value="{{ request.GET.search }}">
+                <button type="submit" class="btn-outline">Search</button>
+                {% if request.GET.search %}
+                <a href="{% url 'admin_replacements' %}" class="btn-outline">Clear</a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Order #</th>
+                    <th>Customer</th>
+                    <th>Product</th>
+                    <th>Quantity</th>
+                    <th>Reason</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                </thead>
+            <tbody>
+                {% for replacement in replacements %}
+                <tr>
+                    <td><strong>#{{ replacement.id }}</strong>
+                    <td><a href="{% url 'admin_order_detail' replacement.order.id %}">#{{ replacement.order.id }}</a>
+                    <td>{{ replacement.order.user.get_full_name|default:replacement.order.user.username }}
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            {% if replacement.product.image %}
+                            <img src="{{ replacement.product.image.url }}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 5px;">
+                            {% endif %}
+                            {{ replacement.product.name }}
+                        </div>
+                    <td>{{ replacement.quantity }}
+                    <td style="max-width: 200px;">
+                        <div class="text-truncate" title="{{ replacement.reason }}">
+                            {{ replacement.reason|truncatechars:30 }}
+                        </div>
+                    <td>
+                        <span class="badge-custom 
+                            {% if replacement.status == 'approved' %}badge-success
+                            {% elif replacement.status == 'pending' %}badge-warning
+                            {% elif replacement.status == 'rejected' %}badge-danger
+                            {% else %}badge-info{% endif %}">
+                            {{ replacement.status|title }}
+                        </span>
+                    <td>{{ replacement.created_at|date:"M d, Y" }}
+                    <td>
+                        <a href="{% url 'admin_replacement_detail' replacement.id %}" class="btn-outline btn-sm">Process</a>
+                {% empty %}
+                 <td colspan="9" class="text-center py-5">
+                        <i class="fas fa-exchange-alt fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No replacement requests found</p>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,53 +1,172 @@
 {% extends 'shop/base.html' %}
+{% load static %}
+
 {% block content %}
 
-<div style="margin-top: 160px;">
-    <div class="container account-wrapper">
-        <h2 class="mb-4">Account Details</h2>
+<style>
+.account-wrapper {
+    margin-top: 160px;
+    margin-bottom: 50px;
+}
+</style>
 
-        <form method="POST">
-        {% csrf_token %}
-
-        <div class="mb-3">
-        <label>Username</label>
-        <input type="text" class="form-control"
-        value="{{ request.user.username }}" readonly>
+<div class="account-wrapper">
+    <div class="container">
+        <div class="account-card">
+            <div class="row g-0">
+                <!-- Left Sidebar - Profile Info -->
+                <div class="col-lg-4">
+                    <div class="account-sidebar">
+                        <div class="user-icon">
+                            <i class="fa fa-user-circle"></i>
+                        </div>
+                        <div class="user-name">{{ request.user.get_full_name|default:request.user.username }}</div>
+                        <div class="user-email">{{ request.user.email }}</div>
+                        
+                        <div class="user-meta">
+                            <div class="meta-item">
+                                <i class="fa fa-calendar"></i>
+                                <span>Joined {{ request.user.date_joined|date:"F Y" }}</span>
+                            </div>
+                            <div class="meta-item">
+                                <i class="fa fa-shopping-bag"></i>
+                                <span>{{ orders_count|default:0 }} Orders</span>
+                            </div>
+                            <div class="meta-item">
+                                <i class="fa fa-heart"></i>
+                                <span>{{ wishlist_count|default:0 }} Wishlist Items</span>
+                            </div>
+                            <div class="meta-item">
+                                <i class="fa fa-map-marker-alt"></i>
+                                <span>{{ addresses_count|default:0 }} Addresses</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Quick Stats -->
+                        <div class="stats-grid mt-4">
+                            <div class="stat-card">
+                                <i class="fa fa-trophy"></i>
+                                <div class="stat-value">Gold</div>
+                                <div class="stat-label">Member Level</div>
+                            </div>
+                            <div class="stat-card">
+                                <i class="fa fa-gift"></i>
+                                <div class="stat-value">10%</div>
+                                <div class="stat-label">Member Discount</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right Main - Edit Form -->
+                <div class="col-lg-8">
+                    <div class="account-main">
+                        <h3>Personal Information</h3>
+                        
+                        <form method="POST" id="accountForm">
+                            {% csrf_token %}
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Username</label>
+                                    <input type="text" class="form-control" value="{{ request.user.username }}" readonly>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" name="email" class="form-control" value="{{ request.user.email }}" required>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">First Name</label>
+                                    <input type="text" name="first_name" class="form-control" value="{{ request.user.first_name }}">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Last Name</label>
+                                    <input type="text" name="last_name" class="form-control" value="{{ request.user.last_name }}">
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Phone Number</label>
+                                <input type="tel" name="phone" class="form-control" value="{{ request.user.profile.phone|default:'' }}" placeholder="Enter your phone number">
+                            </div>
+                            
+                            <!-- Password Change Section -->
+                            <div class="password-section">
+                                <h5>Change Password</h5>
+                                <p class="text-muted small mb-3">Leave blank if you don't want to change</p>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Current Password</label>
+                                    <input type="password" name="current_password" class="form-control" id="currentPassword">
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">New Password</label>
+                                        <input type="password" name="new_password" class="form-control" id="newPassword">
+                                        <small class="text-muted">Min. 8 characters</small>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Confirm Password</label>
+                                        <input type="password" name="confirm_password" class="form-control" id="confirmPassword">
+                                    </div>
+                                </div>
+                                <div id="passwordError" class="text-danger small mb-2" style="display: none;">Passwords do not match</div>
+                                <div id="passwordStrength" class="small mb-2"></div>
+                            </div>
+                            
+                            <!-- Default Address Section -->
+                            <div class="mt-4">
+                                <h5>Default Address</h5>
+                                <div class="row">
+                                    <div class="col-md-8 mb-3">
+                                        <label class="form-label">Address Line</label>
+                                        <input type="text" name="address" class="form-control" value="{{ request.user.profile.address|default:'' }}">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">City</label>
+                                        <input type="text" name="city" class="form-control" value="{{ request.user.profile.city|default:'' }}">
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">State</label>
+                                        <input type="text" name="state" class="form-control" value="{{ request.user.profile.state|default:'' }}">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Country</label>
+                                        <input type="text" name="country" class="form-control" value="{{ request.user.profile.country|default:'' }}">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Zip Code</label>
+                                        <input type="text" name="zipcode" class="form-control" value="{{ request.user.profile.zipcode|default:'' }}">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex gap-3 mt-4">
+                                <button type="submit" class="btn-update flex-grow-1" id="submitBtn">
+                                    <i class="fa fa-save me-2"></i>Save Changes
+                                </button>
+                                <a href="{% url 'order_history' %}" class="btn-outline-primary">
+                                    <i class="fa fa-history me-2"></i>Orders
+                                </a>
+                                <a href="{% url 'wishlist' %}" class="btn-outline-primary">
+                                    <i class="fa fa-heart me-2"></i>Wishlist
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
         </div>
-
-        <div class="mb-3">
-        <label>First Name</label>
-        <input type="text" name="first_name"
-        class="form-control"
-        value="{{ request.user.first_name }}">
-        </div>
-
-        <div class="mb-3">
-        <label>Last Name</label>
-        <input type="text" name="last_name"
-        class="form-control"
-        value="{{ request.user.last_name }}">
-        </div>
-
-        <div class="mb-3">
-        <label>Email</label>
-        <input type="email" name="email"
-        class="form-control"
-        value="{{ request.user.email }}">
-        </div>
-
-        <button type="submit" class="btn btn-primary">
-        Update Details
-        </button>
-
-        </form>
-
-        <hr class="my-4">
-
-        <a href="{% url 'order_history' %}" class="btn btn-outline-primary">
-        View Order History
-        </a>
-
-        </div>
+    </div>
 </div>
+
+<!-- Link Account JavaScript -->
+<script src="{% static 'js/account.js' %}"></script>
 
 {% endblock %}

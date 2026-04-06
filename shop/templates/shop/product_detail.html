@@ -1,4 +1,5 @@
 {% extends 'shop/base.html' %}
+{% load review_tags %}
 {% load static %}
 
 {% block content %}
@@ -33,6 +34,31 @@
                     
                     <!-- Product Name -->
                     <h1 class="display-5 fw-bold mb-3">{{ product.name }}</h1>
+                    
+                    <!-- Rating Summary -->
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="me-3">
+                            {% if avg_rating > 0 %}
+                                {% for i in "12345"|make_list %}
+                                    {% if forloop.counter <= avg_rating %}
+                                        <i class="fas fa-star text-warning"></i>
+                                    {% elif forloop.counter <= avg_rating|add:0.5 %}
+                                        <i class="fas fa-star-half-alt text-warning"></i>
+                                    {% else %}
+                                        <i class="far fa-star text-secondary"></i>
+                                    {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                {% for i in "12345"|make_list %}
+                                    <i class="far fa-star text-secondary"></i>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                        <div>
+                            <span class="fw-bold">{{ avg_rating|floatformat:1 }}</span>
+                            <span class="text-muted">({{ rating_count }} reviews)</span>
+                        </div>
+                    </div>
                     
                     <!-- Price -->
                     <div class="d-flex align-items-center mb-4">
@@ -123,6 +149,137 @@
         </div>
     </div>
 
+    <!-- REVIEWS SECTION -->
+    <div class="container-fluid bg-light py-5">
+        <div class="container py-5">
+            <div class="row">
+                <div class="col-md-4">
+                    <!-- Rating Summary Card -->
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-body p-4">
+                            <h4 class="mb-3">Customer Reviews</h4>
+                            
+                            <!-- Average Rating Display -->
+                            <div class="text-center mb-4">
+                                <div class="display-1 fw-bold">{{ avg_rating|floatformat:1 }}</div>
+                                <div class="mb-2">
+                                    {% if avg_rating > 0 %}
+                                        {% for i in "12345"|make_list %}
+                                            {% if forloop.counter <= avg_rating %}
+                                                <i class="fas fa-star text-warning"></i>
+                                            {% elif forloop.counter <= avg_rating|add:0.5 %}
+                                                <i class="fas fa-star-half-alt text-warning"></i>
+                                            {% else %}
+                                                <i class="far fa-star text-secondary"></i>
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% else %}
+                                        {% for i in "12345"|make_list %}
+                                            <i class="far fa-star text-secondary"></i>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                                <div class="text-muted">{{ rating_count }} reviews</div>
+                            </div>
+                            
+                            <!-- Rating Distribution Bars -->
+                            <div class="rating-distribution">
+                                {% for star in "54321"|make_list %}
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="me-2" style="width: 40px;">{{ star }}★</div>
+                                    <div class="flex-grow-1">
+                                        <div class="progress" style="height: 8px;">
+                                            <div class="progress-bar bg-warning" style="width: {{ rating_percentages|get_item:star|default:0 }}%"></div>
+                                        </div>
+                                    </div>
+                                    <div class="ms-2" style="width: 40px;">{{ rating_counts|get_item:star|default:0 }}</div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-8">
+                    <!-- Write Review Button (Only for verified buyers) -->
+                    {% if can_review %}
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-body p-4 text-center">
+                            <i class="fas fa-check-circle fa-2x text-success mb-3"></i>
+                            <h5>You've purchased this product!</h5>
+                            <p class="text-muted">Share your experience with other customers</p>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#reviewModal">
+                                <i class="fas fa-star me-2"></i>Write a Review
+                            </button>
+                        </div>
+                    </div>
+                    {% elif user.is_authenticated and not user_review %}
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-body p-4 text-center">
+                            <i class="fas fa-lock fa-2x text-muted mb-3"></i>
+                            <h5>Verified Purchase Required</h5>
+                            <p class="text-muted">Only customers who have purchased this product can leave a review</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Reviews List -->
+                    <div class="reviews-list">
+                        <h4 class="mb-4">All Reviews</h4>
+                        
+                        {% for review in reviews %}
+                        <div class="card border-0 shadow-sm mb-3">
+                            <div class="card-body p-4">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <div class="mb-1">
+                                            {% for i in "12345"|make_list %}
+                                                {% if forloop.counter <= review.rating %}
+                                                    <i class="fas fa-star text-warning"></i>
+                                                {% else %}
+                                                    <i class="far fa-star text-secondary"></i>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                        <h6 class="mb-0">{{ review.user.get_full_name|default:review.user.username }}</h6>
+                                    </div>
+                                    <div class="text-end">
+                                        <small class="text-muted">{{ review.created_at|date:"F d, Y" }}</small>
+                                        {% if review.is_verified %}
+                                        <span class="badge bg-success ms-2">
+                                            <i class="fas fa-check-circle me-1"></i>Verified Purchase
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <p class="mb-2">{{ review.review }}</p>
+                                
+                                {% if user.is_authenticated and user == review.user %}
+                                <div class="mt-2">
+                                    <form method="POST" action="{% url 'delete_review' review.id %}" style="display: inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete your review?')">
+                                            <i class="fas fa-trash me-1"></i>Delete
+                                        </button>
+                                    </form>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-body p-4 text-center">
+                                <i class="fas fa-comment fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">No reviews yet. Be the first to review this product!</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Related Products -->
     <div class="container-fluid bg-light py-5">
         <div class="container py-5">
@@ -152,5 +309,182 @@
         </div>
     </div>
 </div>
+
+<!-- Review Modal -->
+<div class="modal fade" id="reviewModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Write a Review</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{% url 'submit_review' product.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" name="order_id" value="{{ user_order.id }}">
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Your Rating</label>
+                        <div class="rating-input">
+                            <div class="d-flex gap-2 flex-row-reverse justify-content-end">
+                                <input type="radio" name="rating" value="5" id="star5" required>
+                                <label for="star5"><i class="far fa-star"></i></label>
+                                <input type="radio" name="rating" value="4" id="star4">
+                                <label for="star4"><i class="far fa-star"></i></label>
+                                <input type="radio" name="rating" value="3" id="star3">
+                                <label for="star3"><i class="far fa-star"></i></label>
+                                <input type="radio" name="rating" value="2" id="star2">
+                                <label for="star2"><i class="far fa-star"></i></label>
+                                <input type="radio" name="rating" value="1" id="star1">
+                                <label for="star1"><i class="far fa-star"></i></label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Your Review</label>
+                        <textarea name="review" class="form-control" rows="5" placeholder="Share your experience with this product..." required></textarea>
+                    </div>
+                    
+                    <div class="alert alert-info small">
+                        <i class="fas fa-info-circle me-2"></i>
+                        As a verified purchaser, your review will help other customers make informed decisions.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Submit Review</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Rating Stars */
+.rating-input input {
+    display: none;
+}
+
+.rating-input label {
+    font-size: 28px;
+    color: #ddd;
+    cursor: pointer;
+    transition: all 0.2s;
+    padding: 0 2px;
+}
+
+.rating-input label:hover,
+.rating-input label:hover ~ label,
+.rating-input input:checked ~ label {
+    color: #ffc107;
+}
+
+.rating-input:hover label {
+    color: #ffc107;
+}
+
+/* Progress Bar */
+.progress {
+    background-color: #e9ecef;
+    border-radius: 4px;
+}
+
+.progress-bar {
+    border-radius: 4px;
+}
+</style>
+
+<script>
+function decreaseQty(productId) {
+    const input = document.getElementById('qty-' + productId);
+    const currentVal = parseInt(input.value);
+    if (currentVal > 1) {
+        input.value = currentVal - 1;
+    }
+}
+
+function increaseQty(productId) {
+    const input = document.getElementById('qty-' + productId);
+    const maxStock = parseInt(input.getAttribute('data-max-stock'));
+    const currentVal = parseInt(input.value);
+    if (currentVal < maxStock) {
+        input.value = currentVal + 1;
+    }
+}
+
+function addToCart(productId) {
+    const quantity = document.getElementById('qty-' + productId).value;
+    const button = document.getElementById('add-to-cart-' + productId);
+    const originalText = button.innerHTML;
+    
+    button.innerHTML = '<i class="fa fa-spinner fa-spin me-2"></i>Adding...';
+    button.disabled = true;
+    
+    fetch(`/add-to-cart/${productId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: `quantity=${quantity}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            button.innerHTML = '<i class="fa fa-check me-2"></i>Added!';
+            button.classList.remove('btn-primary');
+            button.classList.add('btn-success');
+            
+            const cartCount = document.getElementById('cart-count');
+            if (cartCount) cartCount.innerText = data.cart_count;
+            
+            setTimeout(() => {
+                button.innerHTML = originalText;
+                button.classList.remove('btn-success');
+                button.classList.add('btn-primary');
+                button.disabled = false;
+            }, 2000);
+        } else {
+            button.innerHTML = originalText;
+            button.disabled = false;
+            alert(data.error || 'Error adding to cart');
+        }
+    })
+    .catch(() => {
+        button.innerHTML = originalText;
+        button.disabled = false;
+        alert('Error adding to cart');
+    });
+}
+
+function toggleWishlist(button, productId) {
+    const icon = button.querySelector('i');
+    const wasInWishlist = icon.classList.contains('text-danger');
+    
+    fetch(`/toggle-wishlist/${productId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            if (data.is_in_wishlist) {
+                icon.classList.add('text-danger');
+                icon.classList.remove('text-muted');
+            } else {
+                icon.classList.add('text-muted');
+                icon.classList.remove('text-danger');
+            }
+        }
+    })
+    .catch(() => {
+        alert('Error updating wishlist');
+    });
+}
+</script>
 
 {% endblock %}

@@ -1,0 +1,322 @@
+/*** Account Page Styles ***/
+
+.account-card {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+    overflow: hidden;
+}
+
+/* Sidebar Styles */
+.account-sidebar {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 40px 30px;
+    color: white;
+    height: 100%;
+}
+
+.account-sidebar .user-icon {
+    width: 100px;
+    height: 100px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    font-size: 3rem;
+    border: 3px solid rgba(255,255,255,0.5);
+    transition: all 0.3s ease;
+}
+
+.account-sidebar .user-icon:hover {
+    transform: scale(1.05);
+    background: rgba(255,255,255,0.3);
+}
+
+.account-sidebar .user-name {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 5px;
+    text-align: center;
+}
+
+.account-sidebar .user-email {
+    text-align: center;
+    opacity: 0.9;
+    margin-bottom: 30px;
+    font-size: 0.9rem;
+}
+
+.account-sidebar .user-meta {
+    border-top: 1px solid rgba(255,255,255,0.2);
+    padding-top: 20px;
+    margin-top: 20px;
+}
+
+.account-sidebar .meta-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.account-sidebar .meta-item:hover {
+    background: rgba(255,255,255,0.2);
+    transform: translateX(5px);
+}
+
+.account-sidebar .meta-item i {
+    width: 30px;
+    font-size: 1.1rem;
+}
+
+/* Stats Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.stat-card {
+    background: rgba(255,255,255,0.15);
+    border-radius: 12px;
+    padding: 15px;
+    text-align: center;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.stat-card:hover {
+    background: rgba(255,255,255,0.25);
+    transform: translateY(-3px);
+}
+
+.stat-card i {
+    font-size: 1.8rem;
+    margin-bottom: 8px;
+    color: rgba(255,255,255,0.9);
+}
+
+.stat-card .stat-value {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 3px;
+}
+
+.stat-card .stat-label {
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+
+/* Main Content Styles */
+.account-main {
+    padding: 40px;
+    background: white;
+}
+
+.account-main h3 {
+    color: #333;
+    font-weight: 600;
+    margin-bottom: 25px;
+    position: relative;
+    padding-bottom: 10px;
+}
+
+.account-main h3:after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 50px;
+    height: 3px;
+    background: #82c440;
+    border-radius: 3px;
+}
+
+/* Form Styles */
+.form-label {
+    font-weight: 500;
+    color: #555;
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+}
+
+.form-control {
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    padding: 12px 15px;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+}
+
+.form-control:focus {
+    border-color: #82c440;
+    box-shadow: 0 0 0 0.2rem rgba(130, 196, 64, 0.1);
+    outline: none;
+}
+
+.form-control[readonly] {
+    background-color: #f8f9fa;
+    cursor: not-allowed;
+    border-color: #dee2e6;
+}
+
+/* Password Section */
+.password-section {
+    background: #f8f9fa;
+    border-radius: 15px;
+    padding: 25px;
+    margin-top: 30px;
+    border: 1px solid #e9ecef;
+}
+
+.password-section h5 {
+    color: #333;
+    font-weight: 600;
+    margin-bottom: 15px;
+}
+
+/* Buttons */
+.btn-update {
+    background: #82c440;
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 12px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.btn-update:hover {
+    background: #6aa534;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(130, 196, 64, 0.3);
+}
+
+.btn-update:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-outline-primary {
+    border: 2px solid #82c440;
+    color: #82c440;
+    background: transparent;
+    padding: 10px 20px;
+    border-radius: 12px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+}
+
+.btn-outline-primary:hover {
+    background: #82c440;
+    color: white;
+    text-decoration: none;
+}
+
+/* Password Strength Indicator */
+.password-strength {
+    height: 5px;
+    border-radius: 5px;
+    margin-top: 5px;
+    transition: all 0.3s ease;
+}
+
+.strength-weak {
+    background: #dc3545;
+    width: 25%;
+}
+
+.strength-medium {
+    background: #ffc107;
+    width: 50%;
+}
+
+.strength-strong {
+    background: #28a745;
+    width: 75%;
+}
+
+.strength-very-strong {
+    background: #28a745;
+    width: 100%;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .account-sidebar {
+        padding: 30px 20px;
+    }
+    
+    .account-main {
+        padding: 30px 20px;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .account-wrapper {
+        margin-top: 140px;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .d-flex.gap-3 {
+        flex-direction: column;
+    }
+    
+    .btn-update, .btn-outline-primary {
+        width: 100%;
+    }
+}
+
+/* Success/Error Messages */
+.alert-success {
+    background: #d4edda;
+    color: #155724;
+    padding: 12px 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    border-left: 4px solid #28a745;
+}
+
+.alert-error {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 12px 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    border-left: 4px solid #dc3545;
+}
+
+/* Loading Spinner */
+.spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}

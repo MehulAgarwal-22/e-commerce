@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import update_session_auth_hash
 from django.contrib import messages
 from django.db.models import Q, Count
 from django.http import JsonResponse, HttpResponse
@@ -12,6 +13,7 @@ from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta
 from decimal import Decimal
+from django.db.models import Avg, Count
 from .models import *
 
 # ===============================
@@ -95,10 +97,114 @@ def product_detail(request, pk):
     if request.user.is_authenticated:
         is_in_wishlist = Wishlist.objects.filter(user=request.user, product=product).exists()
     
-    return render(request, 'shop/product_detail.html', {
+    # ========== REVIEW SYSTEM ==========
+    # Get average rating and review count
+    avg_rating = product.ratings.aggregate(Avg('rating'))['rating__avg'] or 0
+    rating_count = product.ratings.count()
+    
+    # Get all reviews
+    reviews = Rating.objects.filter(product=product).order_by('-created_at')
+    
+    # Check if user can review (has delivered order with this product)
+    user_review = None
+    can_review = False
+    user_order = None
+    
+    if request.user.is_authenticated:
+        user_review = Rating.objects.filter(user=request.user, product=product).first()
+        
+        # Check if user has purchased and received this product
+        delivered_order = Order.objects.filter(
+            user=request.user,
+            status='Delivered',
+            items__product=product
+        ).first()
+        
+        if delivered_order and not user_review:
+            can_review = True
+            user_order = delivered_order
+    
+    # Rating distribution for progress bars
+    rating_counts = {
+        5: product.ratings.filter(rating=5).count(),
+        4: product.ratings.filter(rating=4).count(),
+        3: product.ratings.filter(rating=3).count(),
+        2: product.ratings.filter(rating=2).count(),
+        1: product.ratings.filter(rating=1).count(),
+    }
+    
+    # Calculate percentages for progress bars
+    rating_percentages = {}
+    if rating_count > 0:
+        for star in range(1, 6):
+            rating_percentages[star] = (rating_counts[star] / rating_count) * 100
+    
+    context = {
         'product': product,
         'is_in_wishlist': is_in_wishlist,
-    })
+        # Review data
+        'avg_rating': avg_rating,
+        'rating_count': rating_count,
+        'reviews': reviews,
+        'rating_counts': rating_counts,
+        'rating_percentages': rating_percentages,
+        'user_review': user_review,
+        'can_review': can_review,
+        'user_order': user_order,
+    }
+    return render(request, 'shop/product_detail.html', context)
+
+
+@login_required
+def submit_review(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+    
+    if request.method == 'POST':
+        rating = int(request.POST.get('rating'))
+        review = request.POST.get('review', '').strip()
+        order_id = request.POST.get('order_id')
+        
+        # Verify the order belongs to user and is delivered
+        if order_id:
+            order = get_object_or_404(Order, id=order_id, user=request.user, status='Delivered')
+            
+            # Verify product was in the order
+            if not order.items.filter(product=product).exists():
+                messages.error(request, 'You can only review products you have purchased.')
+                return redirect('product_detail', pk=product_id)
+        else:
+            messages.error(request, 'Invalid order.')
+            return redirect('product_detail', pk=product_id)
+        
+        # Create or update review (prevent duplicates)
+        rating_obj, created = Rating.objects.update_or_create(
+            user=request.user,
+            product=product,
+            defaults={
+                'rating': rating,
+                'review': review,
+                'order': order,
+                'is_verified': True
+            }
+        )
+        
+        if created:
+            messages.success(request, 'Thank you for your review!')
+        else:
+            messages.success(request, 'Your review has been updated.')
+        
+        return redirect('product_detail', pk=product_id)
+    
+    return redirect('product_detail', pk=product_id)
+
+
+@login_required
+def delete_review(request, review_id):
+    review = get_object_or_404(Rating, id=review_id, user=request.user)
+    product_id = review.product.id
+    review.delete()
+    messages.success(request, 'Your review has been deleted.')
+    return redirect('product_detail', pk=product_id)
 
 # ===============================
 # WISHLIST
@@ -395,9 +501,35 @@ def checkout(request):
         "grand_total": subtotal + gst_total + delivery - discount,
     })
 
+import json
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.utils import timezone
+from django.http import JsonResponse, HttpResponse
+from .models import Order, Product, ReturnRequest, ReplaceRequest, Rating
+
 @login_required
 def order_history(request):
-    orders = Order.objects.filter(user=request.user).order_by("-created_at")
+    orders = Order.objects.filter(user=request.user).prefetch_related('items__product').order_by("-created_at")
+
+    reviewed_product_ids = Rating.objects.filter(user=request.user).values_list('product_id', flat=True)
+    
+    # Pre-calculate item totals for each order
+    for order in orders:
+        order_items = []
+        for item in order.items.all():
+            # Calculate item total here
+            item_total = item.price * item.quantity
+            order_items.append({
+                'product': item.product,
+                'quantity': item.quantity,
+                'price': item.price,
+                'total': item_total,
+                'reviewed': item.product.id in reviewed_product_ids,
+            })
+        order.order_items_with_totals = order_items
+    
     return render(request, "shop/order_history.html", {"orders": orders})
 
 @login_required
@@ -420,37 +552,286 @@ def order_success(request):
 
 @login_required
 def request_return(request, order_id):
+    """Handle return requests - supports both single and multiple items"""
     order = get_object_or_404(Order, id=order_id, user=request.user)
     
-    if order.status != "Delivered":
-        messages.error(request, "Return is only allowed for delivered orders.")
-        return redirect("order_history")
+    if request.method != 'POST':
+        return redirect('order_history')
     
-    if order.delivered_at and timezone.now() > order.delivered_at + timedelta(days=24):
-        messages.error(request, "Return window has expired.")
-        return redirect("order_history")
+    # Get the items data from the request
+    items_data = request.POST.get('items_data')
+    reason = request.POST.get('reason')
+    description = request.POST.get('description', '')
     
-    order.return_requested = True
-    order.save()
-    messages.success(request, "Return request submitted successfully.")
-    return redirect("order_history")
+    # Check if this is a combined return (multiple items)
+    if items_data:
+        try:
+            items = json.loads(items_data)
+            successful_returns = 0
+            failed_returns = []
+            
+            for item_data in items:
+                product_id = item_data.get('id')
+                quantity = int(item_data.get('quantity', 1))
+                
+                # Get the product
+                product = get_object_or_404(Product, id=product_id)
+                
+                # Check if product is returnable
+                if not product.is_returnable:
+                    failed_returns.append(f"{product.name} (not returnable)")
+                    continue
+                
+                # Check if within return window
+                if order.delivered_at:
+                    days_since_delivery = (timezone.now() - order.delivered_at).days
+                    if days_since_delivery > product.return_window_days:
+                        failed_returns.append(f"{product.name} (return window expired)")
+                        continue
+                
+                # Check if quantity is valid
+                order_item = order.items.filter(product=product).first()
+                if order_item and quantity > order_item.quantity:
+                    quantity = order_item.quantity
+                
+                # Create return request for each item
+                ReturnRequest.objects.create(
+                    order=order,
+                    product=product,
+                    quantity=quantity,
+                    reason=reason,
+                    description=description,
+                    status='pending'
+                )
+                successful_returns += 1
+            
+            # Update order status if any returns were successful
+            if successful_returns > 0:
+                order.return_requested = True
+                order.return_reason = reason
+                order.return_initiated_at = timezone.now()
+                order.save()
+                
+                if successful_returns == len(items):
+                    messages.success(request, f'Return request submitted successfully for {successful_returns} item(s).')
+                else:
+                    messages.warning(request, f'Return request submitted for {successful_returns} item(s). Failed: {", ".join(failed_returns)}')
+            else:
+                messages.error(request, f'Unable to process returns. {", ".join(failed_returns)}')
+                
+        except json.JSONDecodeError:
+            messages.error(request, 'Invalid request data.')
+        except Exception as e:
+            messages.error(request, f'Error processing return request: {str(e)}')
+            
+    else:
+        # Handle single item return (existing functionality)
+        product_id = request.POST.get('product_id')
+        quantity = int(request.POST.get('quantity', 1))
+        
+        if not product_id:
+            messages.error(request, 'Product information missing.')
+            return redirect('order_history')
+        
+        product = get_object_or_404(Product, id=product_id)
+        
+        # Check if product is returnable
+        if not product.is_returnable:
+            messages.error(request, 'This product is not eligible for return.')
+            return redirect('order_history')
+        
+        # Check if within return window
+        if order.delivered_at:
+            days_since_delivery = (timezone.now() - order.delivered_at).days
+            if days_since_delivery > product.return_window_days:
+                messages.error(request, f'Return window has expired. Returns accepted within {product.return_window_days} days of delivery.')
+                return redirect('order_history')
+        
+        # Create return request
+        ReturnRequest.objects.create(
+            order=order,
+            product=product,
+            quantity=quantity,
+            reason=reason,
+            description=description,
+            status='pending'
+        )
+        
+        # Update order
+        order.return_requested = True
+        order.return_reason = reason
+        order.return_initiated_at = timezone.now()
+        order.save()
+        
+        messages.success(request, 'Return request submitted successfully. Our team will review it shortly.')
+    
+    return redirect('order_history')
+
 
 @login_required
 def request_replace(request, order_id):
+    """Handle replacement requests - supports both single and multiple items"""
     order = get_object_or_404(Order, id=order_id, user=request.user)
     
-    if order.status != "Delivered":
-        messages.error(request, "Replacement is only allowed for delivered orders.")
-        return redirect("order_history")
+    if request.method != 'POST':
+        return redirect('order_history')
     
-    if order.delivered_at and timezone.now() > order.delivered_at + timedelta(days=24):
-        messages.error(request, "Replacement window has expired.")
-        return redirect("order_history")
+    # Get the items data from the request
+    items_data = request.POST.get('items_data')
+    reason = request.POST.get('reason')
+    description = request.POST.get('description', '')
     
-    order.replace_requested = True
-    order.save()
-    messages.success(request, "Replacement request submitted successfully.")
-    return redirect("order_history")
+    # Check if this is a combined replacement (multiple items)
+    if items_data:
+        try:
+            items = json.loads(items_data)
+            successful_replacements = 0
+            failed_replacements = []
+            
+            for item_data in items:
+                product_id = item_data.get('id')
+                quantity = int(item_data.get('quantity', 1))
+                
+                # Get the product
+                product = get_object_or_404(Product, id=product_id)
+                
+                # Check if product is replaceable
+                if not product.is_replaceable:
+                    failed_replacements.append(f"{product.name} (not replaceable)")
+                    continue
+                
+                # Check if within return window
+                if order.delivered_at:
+                    days_since_delivery = (timezone.now() - order.delivered_at).days
+                    if days_since_delivery > product.return_window_days:
+                        failed_replacements.append(f"{product.name} (replacement window expired)")
+                        continue
+                
+                # Check if quantity is valid
+                order_item = order.items.filter(product=product).first()
+                if order_item and quantity > order_item.quantity:
+                    quantity = order_item.quantity
+                
+                # Create replace request for each item
+                ReplaceRequest.objects.create(
+                    order=order,
+                    product=product,
+                    quantity=quantity,
+                    reason=reason,
+                    description=description,
+                    status='pending'
+                )
+                successful_replacements += 1
+            
+            # Update order status if any replacements were successful
+            if successful_replacements > 0:
+                order.replace_requested = True
+                order.replace_reason = reason
+                order.replace_initiated_at = timezone.now()
+                order.save()
+                
+                if successful_replacements == len(items):
+                    messages.success(request, f'Replacement request submitted successfully for {successful_replacements} item(s).')
+                else:
+                    messages.warning(request, f'Replacement request submitted for {successful_replacements} item(s). Failed: {", ".join(failed_replacements)}')
+            else:
+                messages.error(request, f'Unable to process replacements. {", ".join(failed_replacements)}')
+                
+        except json.JSONDecodeError:
+            messages.error(request, 'Invalid request data.')
+        except Exception as e:
+            messages.error(request, f'Error processing replacement request: {str(e)}')
+            
+    else:
+        # Handle single item replacement (existing functionality)
+        product_id = request.POST.get('product_id')
+        quantity = int(request.POST.get('quantity', 1))
+        
+        if not product_id:
+            messages.error(request, 'Product information missing.')
+            return redirect('order_history')
+        
+        product = get_object_or_404(Product, id=product_id)
+        
+        # Check if product is replaceable
+        if not product.is_replaceable:
+            messages.error(request, 'This product is not eligible for replacement.')
+            return redirect('order_history')
+        
+        # Check if within return window
+        if order.delivered_at:
+            days_since_delivery = (timezone.now() - order.delivered_at).days
+            if days_since_delivery > product.return_window_days:
+                messages.error(request, f'Replacement window has expired. Replacements accepted within {product.return_window_days} days of delivery.')
+                return redirect('order_history')
+        
+        # Create replace request
+        ReplaceRequest.objects.create(
+            order=order,
+            product=product,
+            quantity=quantity,
+            reason=reason,
+            description=description,
+            status='pending'
+        )
+        
+        # Update order
+        order.replace_requested = True
+        order.replace_reason = reason
+        order.replace_initiated_at = timezone.now()
+        order.save()
+        
+        messages.success(request, 'Replacement request submitted successfully. Our team will review it shortly.')
+    
+    return redirect('order_history')
+
+
+# Optional: Add an AJAX endpoint to get return/replace eligibility
+@login_required
+def check_eligibility(request, order_id):
+    """Check which items in an order are eligible for return/replace"""
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+    
+    items_eligibility = []
+    for item in order.items.all():
+        product = item.product
+        eligible = True
+        reason = None
+        
+        # Check if order is delivered
+        if order.status != 'Delivered':
+            eligible = False
+            reason = 'Order not delivered yet'
+        
+        # Check if product is returnable/replaceable
+        elif not (product.is_returnable or product.is_replaceable):
+            eligible = False
+            reason = 'Product not eligible'
+        
+        # Check return window
+        elif order.delivered_at:
+            days_since_delivery = (timezone.now() - order.delivered_at).days
+            if days_since_delivery > product.return_window_days:
+                eligible = False
+                reason = f'Window expired ({product.return_window_days} days)'
+        
+        items_eligibility.append({
+            'id': product.id,
+            'name': product.name,
+            'quantity': item.quantity,
+            'eligible': eligible,
+            'reason': reason,
+            'is_returnable': product.is_returnable,
+            'is_replaceable': product.is_replaceable,
+            'return_window_days': product.return_window_days
+        })
+    
+    return JsonResponse({
+        'order_id': order.id,
+        'status': order.status,
+        'delivered_at': order.delivered_at,
+        'items': items_eligibility
+    })
 
 # ===============================
 # AUTH
@@ -496,14 +877,52 @@ def logout_view(request):
 # ===============================
 @login_required
 def account_details(request):
+    # Get counts for sidebar
+    orders_count = Order.objects.filter(user=request.user).count()
+    wishlist_count = Wishlist.objects.filter(user=request.user).count()
+    
+    # You can add more stats as needed
+    addresses_count = 1  # Default, you can implement address model later
+    
     if request.method == "POST":
-        request.user.first_name = request.POST.get('first_name', '')
-        request.user.last_name = request.POST.get('last_name', '')
-        request.user.email = request.POST.get('email', '')
-        request.user.save()
-        messages.success(request, "Account updated successfully!")
+        # Update user details
+        user = request.user
+        user.first_name = request.POST.get('first_name', '')
+        user.last_name = request.POST.get('last_name', '')
+        user.email = request.POST.get('email', '')
+        
+        # Handle password change
+        current_password = request.POST.get('current_password')
+        new_password = request.POST.get('new_password')
+        confirm_password = request.POST.get('confirm_password')
+        
+        if current_password and new_password and confirm_password:
+            if user.check_password(current_password):
+                if new_password == confirm_password:
+                    if len(new_password) >= 8:
+                        user.set_password(new_password)
+                        update_session_auth_hash(request, user)  # Keep user logged in
+                        messages.success(request, 'Password updated successfully!')
+                    else:
+                        messages.error(request, 'Password must be at least 8 characters!')
+                else:
+                    messages.error(request, 'New passwords do not match!')
+            else:
+                messages.error(request, 'Current password is incorrect!')
+        
+        user.save()
+        
+        # You can add profile fields here if you have a Profile model
+        # For now, we'll just show success message
+        messages.success(request, 'Account details updated successfully!')
         return redirect('account')
-    return render(request, 'shop/account.html')
+    
+    context = {
+        'orders_count': orders_count,
+        'wishlist_count': wishlist_count,
+        'addresses_count': addresses_count,
+    }
+    return render(request, 'shop/account.html', context)
 
 # ===============================
 # STATIC PAGES
@@ -618,3 +1037,5 @@ def create_user_related(sender, instance, created, **kwargs):
     if created:
         Cart.objects.get_or_create(user=instance)
         Wallet.objects.get_or_create(user=instance)
+
+        

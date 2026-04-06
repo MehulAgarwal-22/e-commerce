@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - Fruitables</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&family=Raleway:wght@600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Open Sans', sans-serif;
+            background: linear-gradient(135deg, #f5f7fb 0%, #e9ecef 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        /* Decorative Elements */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="10" cy="10" r="2" fill="%2382c44015"/><circle cx="30" cy="40" r="3" fill="%2382c44015"/><circle cx="70" cy="20" r="4" fill="%2382c44015"/><circle cx="85" cy="70" r="2" fill="%2382c44015"/><circle cx="45" cy="85" r="3" fill="%2382c44015"/></svg>');
+            background-repeat: repeat;
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        
+        .login-container {
+            position: relative;
+            z-index: 1;
+            width: 450px;
+            max-width: 90%;
+        }
+        
+        .login-card {
+            background: white;
+            border-radius: 28px;
+            padding: 45px 40px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            border: 1px solid rgba(130, 196, 64, 0.1);
+        }
+        
+        /* Logo */
+        .logo-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #82c440 0%, #6aa534 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            box-shadow: 0 10px 25px -5px rgba(130, 196, 64, 0.3);
+        }
+        
+        .logo-icon i {
+            font-size: 40px;
+            color: white;
+        }
+        
+        .logo-text {
+            font-family: 'Raleway', sans-serif;
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+        
+        .logo-text .fruit {
+            color: #82c440;
+        }
+        
+        .logo-text .ables {
+            color: #2c3e50;
+        }
+        
+        .subtitle {
+            color: #6c757d;
+            font-size: 14px;
+            margin-bottom: 32px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eef2f6;
+        }
+        
+        /* Form */
+        .form-group {
+            margin-bottom: 24px;
+            text-align: left;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 14px;
+        }
+        
+        .input-group-custom {
+            position: relative;
+        }
+        
+        .input-group-custom i {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #82c440;
+            font-size: 16px;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 14px 16px 14px 48px;
+            border: 2px solid #eef2f6;
+            border-radius: 16px;
+            font-size: 14px;
+            font-family: 'Open Sans', sans-serif;
+            transition: all 0.2s;
+            background: white;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #82c440;
+            box-shadow: 0 0 0 4px rgba(130, 196, 64, 0.1);
+        }
+        
+        /* Button */
+        .btn-login {
+            width: 100%;
+            background: #82c440;
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 16px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .btn-login:hover {
+            background: #6aa534;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(130, 196, 64, 0.3);
+        }
+        
+        /* Alert Messages */
+        .alert {
+            padding: 14px 16px;
+            border-radius: 16px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+            animation: slideDown 0.3s ease;
+            text-align: left;
+        }
+        
+        .alert-success {
+            background: #e6f7e6;
+            color: #2e7d32;
+            border-left: 4px solid #2e7d32;
+        }
+        
+        .alert-error {
+            background: #ffe6e5;
+            color: #d32f2f;
+            border-left: 4px solid #d32f2f;
+        }
+        
+        .alert-warning {
+            background: #fff3e0;
+            color: #ed6c02;
+            border-left: 4px solid #ed6c02;
+        }
+        
+        .alert i {
+            font-size: 18px;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Back Link */
+        .back-link {
+            margin-top: 28px;
+            padding-top: 24px;
+            border-top: 1px solid #eef2f6;
+        }
+        
+        .back-link a {
+            color: #6c757d;
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .back-link a:hover {
+            color: #82c440;
+        }
+        
+        /* Features */
+        .login-features {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-top: 24px;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        
+        .login-features span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .login-features i {
+            font-size: 12px;
+            color: #82c440;
+        }
+        
+        /* Responsive */
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 32px 24px;
+            }
+            
+            .logo-text {
+                font-size: 28px;
+            }
+            
+            .logo-icon {
+                width: 60px;
+                height: 60px;
+            }
+            
+            .logo-icon i {
+                font-size: 30px;
+            }
+            
+            .login-features {
+                flex-direction: column;
+                align-items: center;
+                gap: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <!-- Logo Icon -->
+            <div class="logo-icon">
+                <i class="fas fa-leaf"></i>
+            </div>
+            
+            <!-- Logo Text -->
+            <div class="logo-text">
+                <span class="fruit">Fruit</span><span class="ables">ables</span>
+            </div>
+            <div class="subtitle">Admin Dashboard</div>
+            
+            <!-- Display Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">
+                        <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %}"></i>
+                        <span>{{ message }}</span>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            
+            <!-- Login Form -->
+            <form method="POST" action="{% url 'admin_login' %}">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label><i class="fas fa-user me-2" style="color: #82c440;"></i> Username</label>
+                    <div class="input-group-custom">
+                        <i class="fas fa-user"></i>
+                        <input type="text" name="username" class="form-control" placeholder="Enter your username" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label><i class="fas fa-lock me-2" style="color: #82c440;"></i> Password</label>
+                    <div class="input-group-custom">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" name="password" class="form-control" placeholder="Enter your password" required>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn-login">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Login to Dashboard
+                </button>
+            </form>
+            
+            <div class="back-link">
+                <a href="{% url 'home' %}">
+                    <i class="fas fa-arrow-left"></i>
+                    Back to Website
+                </a>
+            </div>
+            
+            <div class="login-features">
+                <span><i class="fas fa-shield-alt"></i> Secure Access</span>
+                <span><i class="fas fa-lock"></i> Encrypted</span>
+                <span><i class="fas fa-clock"></i> 24/7 Support</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

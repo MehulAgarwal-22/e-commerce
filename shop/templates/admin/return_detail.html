@@ -1,0 +1,158 @@
+{% extends 'admin/admin_base.html' %}
+
+{% block page_title %}Return Request #{{ return_request.id }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <!-- Return Request Details -->
+        <div class="card-custom mb-4">
+            <div class="card-header-custom">
+                <h3><i class="fas fa-info-circle me-2" style="color: #82c440;"></i>Return Request Details</h3>
+            </div>
+            <div class="p-4">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="text-muted">Request ID</label>
+                            <div class="fw-bold">#{{ return_request.id }}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="text-muted">Order ID</label>
+                            <div><a href="{% url 'admin_order_detail' return_request.order.id %}">#{{ return_request.order.id }}</a></div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="text-muted">Product</label>
+                            <div class="d-flex align-items-center gap-2">
+                                {% if return_request.product.image %}
+                                <img src="{{ return_request.product.image.url }}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;">
+                                {% endif %}
+                                <strong>{{ return_request.product.name }}</strong>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="text-muted">Quantity</label>
+                            <div>{{ return_request.quantity }}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="text-muted">Unit Price</label>
+                            <div>₹{{ return_request.product.price|floatformat:2 }}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="text-muted">Refund Amount</label>
+                            <div class="fw-bold text-success">₹{{ return_request.refund_amount|default:return_request.product.price|floatformat:2 }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="text-muted">Customer</label>
+                            <div>{{ return_request.order.user.get_full_name|default:return_request.order.user.username }}</div>
+                            <div class="small text-muted">{{ return_request.order.user.email }}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="text-muted">Order Date</label>
+                            <div>{{ return_request.order.created_at|date:"F d, Y H:i" }}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="text-muted">Delivery Date</label>
+                            <div>{{ return_request.order.delivered_at|date:"F d, Y H:i"|default:"Not delivered" }}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="text-muted">Return Window</label>
+                            <div>{{ return_request.product.return_window_days }} days from delivery</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="text-muted">Current Status</label>
+                            <div>
+                                <span class="badge-custom 
+                                    {% if return_request.status == 'approved' %}badge-success
+                                    {% elif return_request.status == 'pending' %}badge-warning
+                                    {% elif return_request.status == 'rejected' %}badge-danger
+                                    {% else %}badge-info{% endif %}">
+                                    {{ return_request.status|title }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="mb-3">
+                    <label class="text-muted fw-bold">Reason for Return</label>
+                    <div class="p-3 bg-light rounded">{{ return_request.reason }}</div>
+                </div>
+                
+                {% if return_request.description %}
+                <div class="mb-3">
+                    <label class="text-muted fw-bold">Additional Details</label>
+                    <div class="p-3 bg-light rounded">{{ return_request.description }}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <!-- Process Return -->
+        <div class="card-custom mb-4">
+            <div class="card-header-custom">
+                <h3><i class="fas fa-clipboard-list me-2" style="color: #82c440;"></i>Process Request</h3>
+            </div>
+            <div class="p-4">
+                <form method="POST">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <select name="status" class="form-control">
+                            <option value="pending" {% if return_request.status == 'pending' %}selected{% endif %}>Pending</option>
+                            <option value="approved" {% if return_request.status == 'approved' %}selected{% endif %}>Approve</option>
+                            <option value="rejected" {% if return_request.status == 'rejected' %}selected{% endif %}>Reject</option>
+                            <option value="completed" {% if return_request.status == 'completed' %}selected{% endif %}>Completed</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Refund Amount (₹)</label>
+                        <input type="number" name="refund_amount" class="form-control" step="0.01" value="{{ return_request.refund_amount|default:return_request.product.price|floatformat:2 }}">
+                        <small class="text-muted">Amount to refund to customer wallet</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Admin Notes</label>
+                        <textarea name="admin_notes" class="form-control" rows="4" placeholder="Add internal notes...">{{ return_request.admin_notes }}</textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn-primary-custom w-100">Update Status</button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Customer Information -->
+        <div class="card-custom">
+            <div class="card-header-custom">
+                <h3><i class="fas fa-user me-2" style="color: #82c440;"></i>Customer Info</h3>
+            </div>
+            <div class="p-4">
+                <div class="mb-2">
+                    <span class="text-muted">Name:</span>
+                    <span class="fw-bold">{{ return_request.order.user.get_full_name|default:return_request.order.user.username }}</span>
+                </div>
+                <div class="mb-2">
+                    <span class="text-muted">Email:</span>
+                    <span>{{ return_request.order.user.email }}</span>
+                </div>
+                <div class="mb-2">
+                    <span class="text-muted">Phone:</span>
+                    <span>{{ return_request.order.mobile }}</span>
+                </div>
+                <div class="mb-2">
+                    <span class="text-muted">Address:</span>
+                    <span>{{ return_request.order.address }}, {{ return_request.order.city }}, {{ return_request.order.country }} - {{ return_request.order.zipcode }}</span>
+                </div>
+                <a href="{% url 'admin_customer_detail' return_request.order.user.id %}" class="btn-outline mt-3 w-100">View Full Profile</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,78 @@
+{% extends 'admin/admin_base.html' %}
+
+{% block page_title %}Return Requests{% endblock %}
+
+{% block content %}
+<div class="card-custom">
+    <div class="card-header-custom">
+        <h3><i class="fas fa-undo-alt me-2" style="color: #82c440;"></i>Return Requests</h3>
+    </div>
+    
+    <!-- Status Filter Bar -->
+    <div class="p-3 border-bottom" style="background: #f8fafc;">
+        <div class="d-flex gap-2 flex-wrap align-items-center">
+            <a href="{% url 'admin_returns' %}" class="btn-outline {% if not current_status %}active{% endif %}">All</a>
+            <a href="?status=pending" class="btn-outline {% if current_status == 'pending' %}active{% endif %}">Pending ({{ status_counts.pending }})</a>
+            <a href="?status=approved" class="btn-outline {% if current_status == 'approved' %}active{% endif %}">Approved ({{ status_counts.approved }})</a>
+            <a href="?status=rejected" class="btn-outline {% if current_status == 'rejected' %}active{% endif %}">Rejected ({{ status_counts.rejected }})</a>
+            <a href="?status=completed" class="btn-outline {% if current_status == 'completed' %}active{% endif %}">Completed ({{ status_counts.completed }})</a>
+            
+            <form method="GET" class="ms-auto d-flex gap-2">
+                <input type="text" name="search" class="form-control" style="width: 250px;" placeholder="Search by order #, product..." value="{{ request.GET.search }}">
+                <button type="submit" class="btn-outline">Search</button>
+                {% if request.GET.search %}
+                <a href="{% url 'admin_returns' %}" class="btn-outline">Clear</a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Order #</th>
+                    <th>Customer</th>
+                    <th>Product</th>
+                    <th>Quantity</th>
+                    <th>Refund Amount</th>
+                    <th>Reason</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                </thead>
+            <tbody>
+                {% for return_request in returns %}
+                <tr>
+                    <td><strong>#{{ return_request.id }}</strong>
+                    <td><a href="{% url 'admin_order_detail' return_request.order.id %}">#{{ return_request.order.id }}</a>
+                    <td>{{ return_request.order.user.get_full_name|default:return_request.order.user.username }}
+                    <td>{{ return_request.product.name }}
+                    <td>{{ return_request.quantity }}
+                    <td class="fw-bold">₹{{ return_request.refund_amount|default:return_request.product.price|floatformat:2 }}
+                    <td style="max-width: 200px;">
+                        <div class="text-truncate" title="{{ return_request.reason }}">
+                            {{ return_request.reason|truncatechars:30 }}
+                        </div>
+                    <td>
+                        <span class="badge-custom 
+                            {% if return_request.status == 'approved' %}badge-success
+                            {% elif return_request.status == 'pending' %}badge-warning
+                            {% elif return_request.status == 'rejected' %}badge-danger
+                            {% else %}badge-info{% endif %}">
+                            {{ return_request.status|title }}
+                        </span>
+                    <td>{{ return_request.created_at|date:"M d, Y" }}
+                    <td>
+                        <a href="{% url 'admin_return_detail' return_request.id %}" class="btn-outline btn-sm">Process</a>
+                {% empty %}
+                 <td colspan="10" class="text-center py-5">
+                        <i class="fas fa-undo-alt fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No return requests found</p>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

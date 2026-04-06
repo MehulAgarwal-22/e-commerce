@@ -1,0 +1,67 @@
+{% extends 'admin/admin_base.html' %}
+
+{% block page_title %}Orders{% endblock %}
+
+{% block content %}
+<div class="card-custom">
+    <div class="card-header-custom">
+        <h3><i class="fas fa-shopping-cart me-2" style="color: #82c440;"></i>All Orders</h3>
+    </div>
+    
+    <div class="p-3 border-bottom" style="background: #f8fafc;">
+        <form method="GET" class="d-flex gap-2 flex-wrap">
+            <select name="status" class="form-select" style="width: auto;">
+                <option value="">All Status</option>
+                <option value="Pending" {% if request.GET.status == 'Pending' %}selected{% endif %}>Pending</option>
+                <option value="Processing" {% if request.GET.status == 'Processing' %}selected{% endif %}>Processing</option>
+                <option value="Shipped" {% if request.GET.status == 'Shipped' %}selected{% endif %}>Shipped</option>
+                <option value="Delivered" {% if request.GET.status == 'Delivered' %}selected{% endif %}>Delivered</option>
+                <option value="Cancelled" {% if request.GET.status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+            </select>
+            <input type="text" name="search" class="form-control" style="width: 250px;" placeholder="Search by order # or customer..." value="{{ request.GET.search }}">
+            <button type="submit" class="btn-outline">Filter</button>
+            {% if request.GET.status or request.GET.search %}
+            <a href="{% url 'admin_orders' %}" class="btn-outline">Clear</a>
+            {% endif %}
+        </form>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th>Customer</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Payment</th>
+                    <th>Date</th>
+                    <th>Action</th>
+                </thead>
+            <tbody>
+                {% for order in orders %}
+                <tr>
+                    <td><strong>#{{ order.id }}</strong>{% if order.order_number %}<br><small class="text-muted">{{ order.order_number }}</small>{% endif %}
+                    <td>{{ order.user.get_full_name|default:order.user.username }}
+                    <td>₹{{ order.total_amount|floatformat:2 }}
+                    <td>
+                        <span class="badge-custom 
+                            {% if order.status == 'Delivered' %}badge-success
+                            {% elif order.status == 'Pending' %}badge-warning
+                            {% elif order.status == 'Processing' %}badge-info
+                            {% else %}badge-danger{% endif %}">
+                            {{ order.status }}
+                        </span>
+                    
+                    <td>{{ order.payment_method }}
+                    <td>{{ order.created_at|date:"M d, Y" }}
+                    <td><a href="{% url 'admin_order_detail' order.id %}" class="btn-outline">View</a>
+                {% empty %}
+                 <td colspan="7" class="text-center py-5">
+                        <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No orders found</p>
+                {% endfor %}
+            </tbody>
+    </div>
+</div>
+{% endblock %}

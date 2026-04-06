@@ -1,0 +1,148 @@
+{% extends 'admin/admin_base.html' %}
+
+{% block page_title %}Replacement Request #{{ replace_request.id }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <!-- Replacement Request Details -->
+        <div class="card-custom mb-4">
+            <div class="card-header-custom">
+                <h3><i class="fas fa-info-circle me-2" style="color: #82c440;"></i>Replacement Request Details</h3>
+            </div>
+            <div class="p-4">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="text-muted">Request ID</label>
+                            <div class="fw-bold">#{{ replace_request.id }}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="text-muted">Order ID</label>
+                            <div><a href="{% url 'admin_order_detail' replace_request.order.id %}">#{{ replace_request.order.id }}</a></div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="text-muted">Product</label>
+                            <div class="d-flex align-items-center gap-2">
+                                {% if replace_request.product.image %}
+                                <img src="{{ replace_request.product.image.url }}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;">
+                                {% endif %}
+                                <strong>{{ replace_request.product.name }}</strong>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="text-muted">Quantity</label>
+                            <div>{{ replace_request.quantity }}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="text-muted">Unit Price</label>
+                            <div>₹{{ replace_request.product.price|floatformat:2 }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="text-muted">Customer</label>
+                            <div>{{ replace_request.order.user.get_full_name|default:replace_request.order.user.username }}</div>
+                            <div class="small text-muted">{{ replace_request.order.user.email }}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="text-muted">Order Date</label>
+                            <div>{{ replace_request.order.created_at|date:"F d, Y H:i" }}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="text-muted">Delivery Date</label>
+                            <div>{{ replace_request.order.delivered_at|date:"F d, Y H:i"|default:"Not delivered" }}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="text-muted">Replacement Window</label>
+                            <div>{{ replace_request.product.return_window_days }} days from delivery</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="text-muted">Current Status</label>
+                            <div>
+                                <span class="badge-custom 
+                                    {% if replace_request.status == 'approved' %}badge-success
+                                    {% elif replace_request.status == 'pending' %}badge-warning
+                                    {% elif replace_request.status == 'rejected' %}badge-danger
+                                    {% else %}badge-info{% endif %}">
+                                    {{ replace_request.status|title }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="mb-3">
+                    <label class="text-muted fw-bold">Reason for Replacement</label>
+                    <div class="p-3 bg-light rounded">{{ replace_request.reason }}</div>
+                </div>
+                
+                {% if replace_request.description %}
+                <div class="mb-3">
+                    <label class="text-muted fw-bold">Additional Details</label>
+                    <div class="p-3 bg-light rounded">{{ replace_request.description }}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <!-- Process Replacement -->
+        <div class="card-custom mb-4">
+            <div class="card-header-custom">
+                <h3><i class="fas fa-clipboard-list me-2" style="color: #82c440;"></i>Process Request</h3>
+            </div>
+            <div class="p-4">
+                <form method="POST">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <select name="status" class="form-control">
+                            <option value="pending" {% if replace_request.status == 'pending' %}selected{% endif %}>Pending</option>
+                            <option value="approved" {% if replace_request.status == 'approved' %}selected{% endif %}>Approve</option>
+                            <option value="rejected" {% if replace_request.status == 'rejected' %}selected{% endif %}>Reject</option>
+                            <option value="completed" {% if replace_request.status == 'completed' %}selected{% endif %}>Completed</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Admin Notes</label>
+                        <textarea name="admin_notes" class="form-control" rows="4" placeholder="Add internal notes...">{{ replace_request.admin_notes }}</textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn-primary-custom w-100">Update Status</button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Customer Information -->
+        <div class="card-custom">
+            <div class="card-header-custom">
+                <h3><i class="fas fa-user me-2" style="color: #82c440;"></i>Customer Info</h3>
+            </div>
+            <div class="p-4">
+                <div class="mb-2">
+                    <span class="text-muted">Name:</span>
+                    <span class="fw-bold">{{ replace_request.order.user.get_full_name|default:replace_request.order.user.username }}</span>
+                </div>
+                <div class="mb-2">
+                    <span class="text-muted">Email:</span>
+                    <span>{{ replace_request.order.user.email }}</span>
+                </div>
+                <div class="mb-2">
+                    <span class="text-muted">Phone:</span>
+                    <span>{{ replace_request.order.mobile }}</span>
+                </div>
+                <div class="mb-2">
+                    <span class="text-muted">Address:</span>
+                    <span>{{ replace_request.order.address }}, {{ replace_request.order.city }}, {{ replace_request.order.country }} - {{ replace_request.order.zipcode }}</span>
+                </div>
+                <a href="{% url 'admin_customer_detail' replace_request.order.user.id %}" class="btn-outline mt-3 w-100">View Full Profile</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

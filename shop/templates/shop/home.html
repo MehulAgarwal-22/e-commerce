@@ -133,7 +133,7 @@
                         {% for product in products %}
                         <div class="col-md-6 col-lg-4 col-xl-3">
                             <div class="card product-card h-100 border-0 shadow-sm" 
-                                 onclick="location.href='{% url 'product_detail' product.id %}'">
+                                 onclick="location.href='/product/{{ product.id }}/'">
                                 <!-- Product Image -->
                                 <div class="position-relative">
                                     <img src="{{ product.image.url }}" class="card-img-top" style="height: 200px; object-fit: cover;" alt="{{ product.name }}">
@@ -220,7 +220,7 @@
                             {% if product.category.id == category.id %}
                             <div class="col-md-6 col-lg-4 col-xl-3">
                                 <div class="card product-card h-100 border-0 shadow-sm" 
-                                     onclick="location.href='{% url 'product_detail' product.id %}'">
+                                     onclick="location.href='/product/{{ product.id }}/'">
                                     <!-- Product Image -->
                                     <div class="position-relative">
                                         <img src="{{ product.image.url }}" class="card-img-top" style="height: 200px; object-fit: cover;" alt="{{ product.name }}">
@@ -313,7 +313,7 @@
         <div class="owl-carousel vegetable-carousel justify-content-center">
             {% for vegetable in vegetables %}
             <div class="border border-primary rounded position-relative vesitable-item" 
-                 onclick="location.href='{% url 'product_detail' vegetable.id %}'"
+                 onclick="location.href='/product/{{ vegetable.id }}/'"
                  style="cursor: pointer;">
                 <div class="vesitable-img">
                     <img src="{{ vegetable.image.url }}" class="img-fluid w-100 rounded-top" style="height:200px; object-fit:cover;" alt="{{ vegetable.name }}">
@@ -358,7 +358,7 @@
             {% for product in bestsellers %}
             <div class="col-lg-6 col-xl-4">
                 <div class="p-4 rounded bg-light h-100" 
-                     onclick="location.href='{% url 'product_detail' product.id %}'"
+                     onclick="location.href='/product/{{ product.id }}/'"
                      style="cursor: pointer;">
                     <div class="row align-items-center">
                         <div class="col-5">

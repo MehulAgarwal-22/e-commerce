@@ -1,0 +1,147 @@
+{% extends 'admin/admin_base.html' %}
+
+{% block page_title %}Order Details{% endblock %}
+
+{% block content %}
+<!-- Order Header -->
+<div class="card-custom mb-4">
+    <div class="card-header-custom d-flex justify-content-between align-items-center flex-wrap">
+        <div>
+            <h3 class="mb-1">Order #{{ order.id }}{% if order.order_number %} ({{ order.order_number }}){% endif %}</h3>
+            <p class="text-muted mb-0">Placed on {{ order.created_at|date:"F d, Y H:i" }}</p>
+        </div>
+        <div>
+            <span class="badge-custom 
+                {% if order.status == 'Delivered' %}badge-success
+                {% elif order.status == 'Pending' %}badge-warning
+                {% elif order.status == 'Processing' %}badge-info
+                {% elif order.status == 'Shipped' %}badge-info
+                {% else %}badge-danger{% endif %}"
+                style="font-size: 14px; padding: 8px 16px;">
+                {{ order.status }}
+            </span>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-7">
+        <!-- Order Items -->
+        <div class="card-custom">
+            <div class="card-header-custom">
+                <h3><i class="fas fa-box me-2" style="color: #82c440;"></i>Order Items</h3>
+            </div>
+            <div class="table-responsive">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Price</th>
+                            <th>Quantity</th>
+                            <th>Total</th>
+                        </thead>
+                    <tbody>
+                        {% for item in order.items.all %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    {% if item.product.image %}
+                                    <img src="{{ item.product.image.url }}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;">
+                                    {% else %}
+                                    <div style="width: 50px; height: 50px; background: #e2e8f0; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                        <i class="fas fa-image" style="color: #94a3b8;"></i>
+                                    </div>
+                                    {% endif %}
+                                    <div>
+                                        <strong>{{ item.product.name }}</strong>
+                                    </div>
+                                </div>
+                            <td>₹{{ item.price|floatformat:2 }}
+                            <td>{{ item.quantity }}
+                            <td>₹{{ item.total|floatformat:2 }}
+                        {% endfor %}
+                    </tbody>
+                    <tfoot style="background: #f8fafc;">
+                        <tr><td colspan="3" class="text-end fw-bold">Subtotal:</td><td class="fw-bold">₹{{ order.subtotal|floatformat:2 }}</td></tr>
+                        <tr><td colspan="3" class="text-end">GST ({{ order.gst_percent|floatformat:0 }}%):</td><td>₹{{ order.gst_amount|floatformat:2 }}</td></tr>
+                        <tr><td colspan="3" class="text-end">Delivery Charge:</td><td>₹{{ order.delivery_charge|floatformat:2 }}</td></tr>
+                        {% if order.discount_amount > 0 %}
+                        <tr><td colspan="3" class="text-end text-success">Discount:</td><td class="text-success">-₹{{ order.discount_amount|floatformat:2 }}</td></tr>
+                        {% endif %}
+                        <tr style="border-top: 2px solid #e2e8f0;"><td colspan="3" class="text-end fw-bold fs-5">Total:</td><td class="fw-bold fs-5">₹{{ order.total_amount|floatformat:2 }}</td></tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-5">
+        <!-- Update Status -->
+        <div class="card-custom mb-4">
+            <div class="card-header-custom">
+                <h3><i class="fas fa-sync-alt me-2" style="color: #82c440;"></i>Update Status</h3>
+            </div>
+            <div class="p-3">
+                <form method="POST">
+                    {% csrf_token %}
+                    <select name="status" class="form-control mb-3">
+                        <option value="Pending" {% if order.status == 'Pending' %}selected{% endif %}>Pending</option>
+                        <option value="Processing" {% if order.status == 'Processing' %}selected{% endif %}>Processing</option>
+                        <option value="Shipped" {% if order.status == 'Shipped' %}selected{% endif %}>Shipped</option>
+                        <option value="Delivered" {% if order.status == 'Delivered' %}selected{% endif %}>Delivered</option>
+                        <option value="Cancelled" {% if order.status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+                    </select>
+                    <button type="submit" class="btn-primary-custom w-100">Update Status</button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Customer Info -->
+        <div class="card-custom mb-4">
+            <div class="card-header-custom">
+                <h3><i class="fas fa-user me-2" style="color: #82c440;"></i>Customer Information</h3>
+            </div>
+            <div class="p-3">
+                <div class="info-row d-flex mb-2">
+                    <div class="info-label" style="width: 100px;"><strong>Name:</strong></div>
+                    <div class="info-value">{{ order.first_name }} {{ order.last_name }}</div>
+                </div>
+                <div class="info-row d-flex mb-2">
+                    <div class="info-label" style="width: 100px;"><strong>Email:</strong></div>
+                    <div class="info-value">{{ order.email }}</div>
+                </div>
+                <div class="info-row d-flex mb-2">
+                    <div class="info-label" style="width: 100px;"><strong>Mobile:</strong></div>
+                    <div class="info-value">{{ order.mobile }}</div>
+                </div>
+                <div class="info-row d-flex mb-2">
+                    <div class="info-label" style="width: 100px;"><strong>Payment:</strong></div>
+                    <div class="info-value">{{ order.payment_method }}</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Shipping Address -->
+        <div class="card-custom">
+            <div class="card-header-custom">
+                <h3><i class="fas fa-map-marker-alt me-2" style="color: #82c440;"></i>Shipping Address</h3>
+            </div>
+            <div class="p-3">
+                <div class="info-value">{{ order.address }}{% if order.company %}, {{ order.company }}{% endif %}</div>
+                <div class="info-value mt-2">{{ order.city }}, {{ order.country }} - {{ order.zipcode }}</div>
+                {% if order.order_note %}
+                <hr>
+                <div><strong>Order Note:</strong></div>
+                <div class="info-value mt-1">{{ order.order_note }}</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Add any additional JavaScript for order detail page here
+</script>
+{% endblock %}

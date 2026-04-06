@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Category, Product, Order, OrderItem, Coupon
+from .models import Category, Product, Order, OrderItem, Coupon, Rating
 
 
 @admin.register(Category)
@@ -28,3 +28,9 @@ class OrderItemAdmin(admin.ModelAdmin):
 @admin.register(Coupon)
 class CouponAdmin(admin.ModelAdmin):
     list_display = ("code", "discount_percent", "active")
+
+@admin.register(Rating)
+class RatingAdmin(admin.ModelAdmin):
+    list_display = ('product', 'user', 'rating', 'is_verified', 'created_at')
+    list_filter = ('rating', 'is_verified')
+    search_fields = ('product__name', 'user__username')

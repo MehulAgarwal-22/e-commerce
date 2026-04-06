@@ -1,0 +1,192 @@
+{% extends 'admin/admin_base.html' %}
+
+{% block page_title %}Settings{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card-custom">
+            <div class="card-header-custom">
+                <h3><i class="fas fa-cog me-2" style="color: #82c440;"></i>Store Settings</h3>
+            </div>
+            <div class="p-4">
+                <form method="POST" action="{% url 'admin_settings' %}">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Store Name</label>
+                                <input type="text" name="store_name" class="form-control" value="Fruitables">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Store Email</label>
+                                <input type="email" name="store_email" class="form-control" value="support@fruitables.com">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Phone Number</label>
+                                <input type="text" name="store_phone" class="form-control" value="+91 9876543210">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Currency</label>
+                                <select name="currency" class="form-control">
+                                    <option value="INR" selected>Indian Rupee (₹)</option>
+                                    <option value="USD">US Dollar ($)</option>
+                                    <option value="EUR">Euro (€)</option>
+                                    <option value="GBP">British Pound (£)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Store Address</label>
+                        <textarea name="store_address" class="form-control" rows="3">123 Street, New York, USA</textarea>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <h4 class="mb-3">Shipping Settings</h4>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Free Shipping Threshold (₹)</label>
+                                <input type="number" name="free_shipping_threshold" class="form-control" value="500">
+                                <small class="text-muted">Orders above this amount get free shipping</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Standard Delivery Charge (₹)</label>
+                                <input type="number" name="delivery_charge" class="form-control" value="50">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <h4 class="mb-3">Tax Settings</h4>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Default GST Rate (%)</label>
+                                <input type="number" step="0.01" name="default_gst" class="form-control" value="5">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <h4 class="mb-3">Order Settings</h4>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Auto Cancel Pending Orders After (days)</label>
+                                <input type="number" name="auto_cancel_days" class="form-control" value="3">
+                                <small class="text-muted">Automatically cancel orders pending for this many days</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Return Window (days)</label>
+                                <input type="number" name="return_window" class="form-control" value="7">
+                                <small class="text-muted">Days after delivery when returns are allowed</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <h4 class="mb-3">Notification Settings</h4>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check mb-2">
+                                <input type="checkbox" class="form-check-input" id="order_confirmation" checked>
+                                <label class="form-check-label" for="order_confirmation">Send order confirmation email</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input type="checkbox" class="form-check-input" id="order_shipped" checked>
+                                <label class="form-check-label" for="order_shipped">Send shipping notification email</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input type="checkbox" class="form-check-input" id="order_delivered" checked>
+                                <label class="form-check-label" for="order_delivered">Send delivery confirmation email</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check mb-2">
+                                <input type="checkbox" class="form-check-input" id="low_stock_alert" checked>
+                                <label class="form-check-label" for="low_stock_alert">Low stock alert email</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input type="checkbox" class="form-check-input" id="new_customer" checked>
+                                <label class="form-check-label" for="new_customer">New customer welcome email</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input type="checkbox" class="form-check-input" id="newsletter">
+                                <label class="form-check-label" for="newsletter">Enable newsletter subscription</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <h4 class="mb-3">Security Settings</h4>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Session Timeout (minutes)</label>
+                                <input type="number" name="session_timeout" class="form-control" value="60">
+                                <small class="text-muted">Admin session timeout after inactivity</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Max Login Attempts</label>
+                                <input type="number" name="max_login_attempts" class="form-control" value="5">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn-primary-custom">Save Settings</button>
+                        <button type="reset" class="btn-outline" onclick="resetForm()">Reset</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function resetForm() {
+        if (confirm('Reset all settings to default values?')) {
+            document.querySelector('form').reset();
+            // Set default values for checkboxes that should be checked
+            document.getElementById('order_confirmation').checked = true;
+            document.getElementById('order_shipped').checked = true;
+            document.getElementById('order_delivered').checked = true;
+            document.getElementById('low_stock_alert').checked = true;
+            document.getElementById('new_customer').checked = true;
+        }
+    }
+</script>
+{% endblock %}

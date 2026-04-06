@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Product - Fruitables Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fb; }
+        
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 260px;
+            height: 100%;
+            background: #1e293b;
+            color: white;
+            transition: 0.3s;
+            z-index: 1000;
+        }
+        .sidebar-header { padding: 25px 20px; border-bottom: 1px solid #334155; text-align: center; }
+        .logo { font-size: 24px; font-weight: bold; color: #82c440; }
+        .logo span { color: white; }
+        .sidebar-menu { padding: 20px 0; }
+        .menu-item {
+            display: block;
+            padding: 12px 20px;
+            color: #cbd5e1;
+            text-decoration: none;
+        }
+        .menu-item:hover, .menu-item.active { background: #82c440; color: white; }
+        .menu-item i { width: 25px; margin-right: 10px; }
+        
+        .main-content { margin-left: 260px; padding: 20px; }
+        .top-bar {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .page-title { font-size: 20px; font-weight: 600; margin: 0; }
+        .user-avatar {
+            width: 40px; height: 40px;
+            background: #82c440;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        .logout-btn { background: #ef4444; color: white; padding: 8px 15px; border-radius: 8px; text-decoration: none; }
+        
+        .form-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 500; }
+        .form-control {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+        .form-control:focus { outline: none; border-color: #82c440; }
+        .current-image { max-width: 200px; margin-top: 10px; border-radius: 8px; }
+        .btn-primary { background: #82c440; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; }
+        .btn-primary:hover { background: #6aa534; }
+        .btn-secondary { background: #64748b; color: white; border: none; padding: 12px 24px; border-radius: 8px; text-decoration: none; display: inline-block; }
+        
+        @media (max-width: 992px) {
+            .sidebar { left: -260px; }
+            .sidebar.show { left: 0; }
+            .main-content { margin-left: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">Fruit<span>ables</span></div>
+            <div style="font-size: 12px; color: #94a3b8;">Admin Panel</div>
+        </div>
+        <div class="sidebar-menu">
+            <a href="{% url 'admin_dashboard' %}" class="menu-item"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="{% url 'admin_products' %}" class="menu-item active"><i class="fas fa-box"></i> Products</a>
+            <a href="{% url 'admin_categories' %}" class="menu-item"><i class="fas fa-tags"></i> Categories</a>
+            <a href="{% url 'admin_orders' %}" class="menu-item"><i class="fas fa-shopping-cart"></i> Orders</a>
+            <a href="{% url 'admin_customers' %}" class="menu-item"><i class="fas fa-users"></i> Customers</a>
+            <a href="{% url 'admin_coupons' %}" class="menu-item"><i class="fas fa-ticket-alt"></i> Coupons</a>
+            <a href="{% url 'admin_payments' %}" class="menu-item"><i class="fas fa-credit-card"></i> Payments</a>
+            <hr style="margin: 15px 20px; border-color: #334155;">
+            <a href="/" class="menu-item"><i class="fas fa-store"></i> View Store</a>
+            <a href="{% url 'admin_logout' %}" class="menu-item"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        </div>
+    </div>
+    
+    <div class="main-content">
+        <div class="top-bar">
+            <button class="btn btn-light d-md-none" onclick="toggleSidebar()" style="border: none; font-size: 20px;"><i class="fas fa-bars"></i></button>
+            <h1 class="page-title">Edit Product</h1>
+            <div class="d-flex align-items-center gap-3">
+                <div class="user-avatar">{{ request.user.username|first|upper }}</div>
+                <span>{{ request.user.username }}</span>
+                <a href="{% url 'admin_logout' %}" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            </div>
+        </div>
+        
+        <div class="form-card">
+            <form method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label>Product Name</label>
+                    <input type="text" name="name" class="form-control" value="{{ product.name }}" required>
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <select name="category" class="form-control" required>
+                        {% for cat in categories %}
+                        <option value="{{ cat.id }}" {% if cat.id == product.category.id %}selected{% endif %}>{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Price (₹)</label>
+                            <input type="number" step="0.01" name="price" class="form-control" value="{{ product.price }}" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Stock Quantity</label>
+                            <input type="number" name="stock" class="form-control" value="{{ product.stock }}" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Low Stock Threshold</label>
+                    <input type="number" name="low_stock_threshold" class="form-control" value="{{ product.low_stock_threshold }}">
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea name="description" class="form-control" rows="4">{{ product.description }}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>Current Image</label>
+                    {% if product.image %}
+                    <div><img src="{{ product.image.url }}" class="current-image" alt="{{ product.name }}"></div>
+                    {% endif %}
+                    <input type="file" name="image" class="form-control" accept="image/*">
+                    <small class="text-muted">Leave empty to keep current image</small>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn-primary">Update Product</button>
+                    <a href="{% url 'admin_products' %}" class="btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('show'); }
+    </script>
+</body>
+</html>
